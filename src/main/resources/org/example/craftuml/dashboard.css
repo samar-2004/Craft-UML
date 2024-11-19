@@ -1,0 +1,57 @@
+
+.root {
+    -fx-background-color: #f2f2f2;
+}
+
+.menu-bar {
+    -fx-background-color: #ececec;
+}
+
+.menu-bar > .menu {
+    -fx-text-fill: #3b1e54;
+}
+
+.menu-bar .menu-item {
+    -fx-background-color: #ececec;
+    -fx-text-fill: #3b1e54;
+}
+
+.menu-bar .menu-item:hover {
+    -fx-background-color: #c9c9c9;
+}
+
+.button {
+    -fx-font-size: 14px;
+    -fx-padding: 10px;
+    -fx-background-color: #503774;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+
+.button:hover {
+    -fx-background-color: #785aa6;
+}
+
+#drawingCanvas{
+       -fx-background-color: black;
+          -fx-border-color: #3b1e54;
+          -fx-border-width: 2px;
+          -fx-border-radius: 5px;
+}
+
+.model-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #3b1e54;
+}
+
+.list-view {
+    -fx-font-size: 12px;
+    -fx-background-color: #e2e2e2;
+    -fx-background-radius: 5;
+    -fx-border-color: #3b1e54;
+    -fx-border-width: 2px;
+    -fx-padding: 5;
+    -fx-text-fill: #3b1e54;
+}

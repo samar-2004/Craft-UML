@@ -6,11 +6,11 @@
 
 <StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.craftuml.HelloController">
 
-    <Label prefHeight="468.0" prefWidth="734.0" style="-fx-font-size: 48px; -fx-font-family: 'Arial Black'; -fx-text-fill: black; -fx-effect: dropshadow(gaussian, grey, 10, 0.5, 0, 0);" text="WELCOME TO CRAFT UML" textFill="#700ec7" underline="true" StackPane.alignment="TOP_CENTER" />
+    <Label prefHeight="468.0" prefWidth="734.0" style="-fx-font-size: 48px; -fx-font-family: 'Arial Black'; -fx-text-fill: #503774; -fx-effect: dropshadow(gaussian, grey, 10, 0.5, 0, 0);" text="WELCOME TO CRAFT UML" textFill="#700ec7" underline="true" StackPane.alignment="TOP_CENTER" />
 
     <Label opacity="0.53" style="-fx-font-size: 20px; -fx-font-family: 'Arial'; -fx-text-fill: black; -fx-opacity: 0.8;" text="Press any key to continue" StackPane.alignment="BOTTOM_CENTER">
         <StackPane.margin>
-            <Insets bottom="50" />
+            <Insets bottom="20"/>
         </StackPane.margin>
     </Label>
 </StackPane>

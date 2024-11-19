@@ -1,0 +1,24 @@
+.button {
+    -fx-background-color: #503774;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-padding: 10px 20px;
+    -fx-border-radius: 5;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #785aa6;
+}
+
+.vbox {
+    -fx-background-color: #f5f5f5;
+    -fx-padding: 30;
+    -fx-alignment: center;
+}
+
+.label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #503774;
+}
