@@ -1,12 +1,10 @@
 package org.example.craftuml;
 
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 public class HelloController {
     private Stage stage;
@@ -29,20 +27,24 @@ public class HelloController {
     }
 
     private void handleKeyPress(KeyEvent event) {
-        loadMainDashboard();
+        SelectDashboard();
+
     }
 
-    private void loadMainDashboard() {
+    private void SelectDashboard() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("main-dashboard-view.fxml"));
-            Scene dashboardScene = new Scene(loader.load());
-            stage.setScene(dashboardScene);
-            Platform.runLater(() -> {
-                stage.setWidth(1920);
-                stage.setHeight(1080);
-                stage.setMaximized(true);
-                stage.show();
-            });
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("choose-diagram-view.fxml"));
+            Stage chooseDiagramStage = new Stage();
+            chooseDiagramStage.setScene(new Scene(loader.load()));
+
+            ChooseDiagramController controller = loader.getController();
+            controller.setStage(chooseDiagramStage);
+
+            chooseDiagramStage.setMaximized(true);
+
+            chooseDiagramStage.setTitle("Choose Diagram Type");
+            chooseDiagramStage.initOwner(stage);
+            chooseDiagramStage.show();
         } catch (Exception e) {
             e.printStackTrace();
         }
