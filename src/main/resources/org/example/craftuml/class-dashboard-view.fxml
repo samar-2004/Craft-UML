@@ -40,8 +40,23 @@
 
        <left >
               <VBox spacing="15" alignment="TOP_LEFT" style="-fx-padding: 20; -fx-background-color: #D3D3D3;">
-                     <Label text="Create Diagram" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
-                     <Button onAction="#handleClassDiagram" prefHeight="40" prefWidth="150" text="Class Diagram" />
+                     <Label text="CLASS DIAGRAM" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+                     <Button onAction="#handleClassDiagram" prefHeight="40" prefWidth="150" text="Add Class"/>
+
+                     <Button onAction="#handleAddInterface" prefHeight="40" prefWidth="150" text="Add Interface"/>
+
+                     <!-- Button to add an Association -->
+                     <Button onAction="#handleAddAssociation" prefHeight="40" prefWidth="150" text="Add Association"/>
+
+                     <!-- Button to add a Composition -->
+                     <Button onAction="#handleAddComposition" prefHeight="40" prefWidth="150" text="Add Composition"/>
+
+                     <!-- Button to add an Aggregation -->
+                     <Button onAction="#handleAddAggregation" prefHeight="40" prefWidth="150" text="Add Aggregation"/>
+
+                     <!-- Button to set Multiplicity -->
+                     <Button onAction="#handleSetMultiplicity" prefHeight="40" prefWidth="150" text="Set Multiplicity"/>
+
               </VBox>
        </left>
 
