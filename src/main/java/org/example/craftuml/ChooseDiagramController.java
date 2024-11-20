@@ -36,6 +36,7 @@ public class ChooseDiagramController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("class-dashboard-view.fxml"));
             Scene dashboardScene = new Scene(loader.load());
             stage.setScene(dashboardScene);
+            stage.setTitle("Class Diagram DashBoard");
             Platform.runLater(() -> {
                 stage.setWidth(1920);
                 stage.setHeight(1080);
