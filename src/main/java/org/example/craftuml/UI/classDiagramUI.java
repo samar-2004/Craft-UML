@@ -49,6 +49,12 @@ public class classDiagramUI
         classNameField.setPromptText("Enter Class Name");
         classNameField.setPrefWidth(300);
 
+
+        inputStage.setOnCloseRequest(event -> {
+            currentClassDiagram = null;
+            inputStage.close();
+        });
+
         if (currentClassDiagram.getName() != null) {
             classNameField.setText(currentClassDiagram.getName());
         }
