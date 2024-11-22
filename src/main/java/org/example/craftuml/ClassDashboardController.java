@@ -114,7 +114,12 @@ public class ClassDashboardController
 
         double width = maxWidth + 40;
 
-        gc.setStroke(Color.BLACK);
+        if (classDiagram == activeDiagram) {
+            gc.setStroke(new Color(0.47, 0.35, 0.65, 1.0));   // Use a different color for active (selected) diagram
+        } else {
+            gc.setStroke(Color.BLACK);  // Default color for others
+        }
+
         gc.setLineWidth(2);
         gc.strokeRect(x, y, width, height);
 
@@ -172,16 +177,17 @@ public class ClassDashboardController
             redrawCanvas();
         }
     }
+
     public void redrawCanvas() {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
 
         for (ClassDiagram diagram : classDiagrams) {
-            createClassDiagram(diagram);
+              createClassDiagram(diagram);
         }
 
         for (InterfaceData diagram : interfaceDiagrams) {
-            createInterfaceDiagram(diagram);
+             createInterfaceDiagram(diagram);
         }
     }
     private void editClassDiagram(ClassDiagram classDiagram) {
@@ -235,10 +241,6 @@ public class ClassDashboardController
         return classNameHeight + attributeHeight + methodHeight + 10;
     }
 
-
-
-
-
     private void initializeCanvasHandlers() {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
 
@@ -270,6 +272,7 @@ public class ClassDashboardController
                     activeDiagram = null;
                     activeInterface = null;
                 }
+                redrawCanvas();
             } else if (event.isPrimaryButtonDown()) {
                 activeDiagram = null;
                 activeInterface = null;
@@ -325,6 +328,7 @@ public class ClassDashboardController
         });
 
         drawingCanvas.setOnMouseReleased(event -> {
+
         });
 
         drawingCanvas.setOnMouseEntered(event -> drawingCanvas.setCursor(Cursor.MOVE));
@@ -356,13 +360,6 @@ public class ClassDashboardController
 
         contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
     }
-
-
-
-
-
-
-
 
     @FXML
     private void handleAddInterface() {
@@ -400,7 +397,11 @@ public class ClassDashboardController
         double width = maxWidth * 1.3;
         double height = interfaceNameHeight + methodHeight;
 
-        gc.setStroke(Color.BLACK);
+        if (interfaceDiagram == activeInterface) {
+            gc.setStroke(new Color(0.47, 0.35, 0.65, 1.0));
+        } else {
+            gc.setStroke(Color.BLACK);
+        }
         gc.setLineWidth(2);
         gc.strokeRect(x, y, width, height);
 
@@ -486,11 +487,8 @@ public class ClassDashboardController
         return interfaceNameHeight + methodHeight;
     }
 
-
-
-
     @FXML
-    private void handleAddAssociation() {
+    private void handleAddAssociation(){
         System.out.println("Add Association button clicked");
     }
 
