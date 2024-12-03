@@ -1,4 +1,4 @@
-package org.example.craftuml;
+package org.example.craftuml.Service;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -38,7 +38,7 @@ public class ChooseDiagramController {
 
     private void openClassDashboard() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("class-dashboard-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/example/craftuml/class-dashboard-view.fxml"));
             Scene dashboardScene = new Scene(loader.load());
             stage.setScene(dashboardScene);
             stage.setTitle("Class Diagram DashBoard");
