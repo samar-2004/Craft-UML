@@ -13,4 +13,6 @@ module org.example.craftuml {
 
     opens org.example.craftuml to javafx.fxml;
     exports org.example.craftuml;
+    exports org.example.craftuml.Service;
+    opens org.example.craftuml.Service to javafx.fxml;
 }
