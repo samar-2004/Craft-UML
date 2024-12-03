@@ -11,6 +11,11 @@ module org.example.craftuml {
     requires eu.hansolo.tilesfx;
     requires jdk.sctp;
 
+
+    requires com.fasterxml.jackson.databind;
+    requires org.apache.pdfbox;
+    requires javafx.swing;
+
     opens org.example.craftuml to javafx.fxml;
     exports org.example.craftuml;
     exports org.example.craftuml.Service;
