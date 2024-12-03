@@ -1,5 +1,8 @@
 package org.example.craftuml.models.ClassDiagrams;
 
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import org.example.craftuml.models.DiagramComponent;
 
 import java.util.ArrayList;
@@ -10,6 +13,10 @@ public class ClassDiagram implements DiagramComponent {
     private List<AttributeData> attributes;
     private List<MethodData> methods;
     private double x, y;
+    private double height,width;
+    private static final double PADDING = 10;
+    private static final Font FONT = Font.font("Arial", 12);
+    private Rectangle diagramRectangle;
 
     public ClassDiagram(String name, double x, double y) {
         setName(name);
@@ -23,6 +30,13 @@ public class ClassDiagram implements DiagramComponent {
         this.attributes = new ArrayList<>();
         this.methods = new ArrayList<>();
     }
+    public void setRectangle(Rectangle rect) {
+        this.diagramRectangle = rect;
+    }
+    public Rectangle getRectangle() {
+        return this.diagramRectangle;
+    }
+
     public void setAttributes(List<AttributeData> attributes) {
         if (attributes == null) {
             throw new IllegalArgumentException("Attributes list cannot be null.");
@@ -60,6 +74,7 @@ public class ClassDiagram implements DiagramComponent {
         return methods;
     }
 
+
     public double getX() {
         return x;
     }
@@ -87,5 +102,21 @@ public class ClassDiagram implements DiagramComponent {
     public void setPosition(double x, double y) {
         this.x = x;
         this.y = y;
+    }
+
+    public void setWidth(double width) {
+        this.width = width;
+    }
+
+    public void setHeight(double height) {
+        this.height = height;
+    }
+
+    public double getWidth() {
+       return this.width;
+    }
+
+    public double getHeight() {
+        return this.height;
     }
 }

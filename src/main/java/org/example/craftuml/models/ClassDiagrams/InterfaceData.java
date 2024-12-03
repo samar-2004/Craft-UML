@@ -1,6 +1,8 @@
 package org.example.craftuml.models.ClassDiagrams;
 
 
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import org.example.craftuml.models.DiagramComponent;
 
 import java.util.ArrayList;
@@ -10,6 +12,9 @@ public class InterfaceData implements DiagramComponent {
     private String name;
     private List<MethodData> methods;
     private double x, y;
+    private double height,width;
+    private static final double PADDING = 10;
+    private static final Font FONT = Font.font("Arial", 12);
 
     public InterfaceData(String name,List<MethodData> methods) {
         this.name = name;
@@ -60,4 +65,21 @@ public class InterfaceData implements DiagramComponent {
     public void setY(double newY) {
         this.y = newY;
     }
+
+    public void setWidth(double width) {
+        this.width = width;
+    }
+
+    public void setHeight(double height) {
+        this.height = height;
+    }
+
+    public double getWidth() {
+        return this.width;
+    }
+
+    public double getHeight() {
+        return this.height;
+    }
+
 }
