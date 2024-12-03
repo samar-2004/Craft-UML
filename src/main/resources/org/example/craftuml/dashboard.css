@@ -3,33 +3,41 @@
     -fx-background-color: #f2f2f2;
 }
 
-.menu-bar {
-    -fx-background-color: #ececec;
-}
-
-.menu-bar > .menu {
-    -fx-text-fill: #3b1e54;
-}
-
-.menu-bar .menu-item {
-    -fx-background-color: #ececec;
-    -fx-text-fill: #3b1e54;
-}
-
-.menu-bar .menu-item:hover {
-    -fx-background-color: #c9c9c9;
-}
-
-.button {
-    -fx-font-size: 14px;
+.top-buttons-container {
+    -fx-background-color: #D3D3D3;
     -fx-padding: 10px;
+}
+
+.top-button {
+    -fx-font-size: 12px;
+    -fx-text-fill: white;
+    -fx-padding: 8px 16px;
+    -fx-background-color: #302d45;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-weight: bold;
+}
+
+.top-button:hover {
+    -fx-background-color:#785aa6 ;
+    -fx-text-fill: white;
+}
+
+.top-button:pressed {
+    -fx-background-color: #5A4C7A;
+}
+
+.left-button {
+    -fx-font-size: 14px;
+    -fx-padding: 10px 10px;
     -fx-background-color: #503774;
     -fx-text-fill: white;
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-font-weight: bold;
 }
 
-.button:hover {
+.left-button:hover {
     -fx-background-color: #785aa6;
 }
 
@@ -43,7 +51,6 @@
 .model-label {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: #3b1e54;
 }
 
 .list-view {

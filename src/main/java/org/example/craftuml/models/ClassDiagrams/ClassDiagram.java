@@ -4,6 +4,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import org.example.craftuml.models.DiagramComponent;
+import org.example.craftuml.models.Relationship;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ public class ClassDiagram implements DiagramComponent {
     private static final double PADDING = 10;
     private static final Font FONT = Font.font("Arial", 12);
     private Rectangle diagramRectangle;
+    private List<Relationship> relationships = new ArrayList<>();
 
     public ClassDiagram(String name, double x, double y) {
         setName(name);
@@ -119,4 +121,13 @@ public class ClassDiagram implements DiagramComponent {
     public double getHeight() {
         return this.height;
     }
+
+    public void addRelationship(Relationship relationship){
+       this.relationships.add(relationship);
+    }
+    public void removeRelationship(Relationship relationship)
+    {
+
+    }
+
 }
