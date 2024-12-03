@@ -33,7 +33,7 @@ public class ChooseDiagramController {
     private void openUseCaseDashboard() {
         System.out.println("Button clicked, opening Use Case Dashboard...");
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("use-case-dashboard-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/example/craftuml/use-case-dashboard-view.fxml"));
             Scene dashboardScene = new Scene(loader.load());
             stage.setScene(dashboardScene);
             stage.setTitle("Use Case Diagram Dashboard");

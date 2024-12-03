@@ -1,4 +1,4 @@
-package org.example.craftuml;
+package org.example.craftuml.Service;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
