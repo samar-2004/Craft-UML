@@ -1,9 +1,12 @@
 package org.example.craftuml.models.ClassDiagrams;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class MethodData {
     private String accessModifier;
     private String name;
     private String returnType;
+    public MethodData() {
+    }
 
     public MethodData(String accessModifier, String name, String returnType) {
         this.accessModifier = accessModifier;
