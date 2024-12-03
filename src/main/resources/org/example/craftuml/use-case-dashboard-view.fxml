@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.craftuml.Service.UseCaseDashboardController">
+
+<top>
+            <MenuBar styleClass="menu-bar">
+                <Menu text="File">
+                    <MenuItem onAction="#handleNewProject" text="New Project" />
+                    <MenuItem onAction="#handleOpenProject" text="Open Project" />
+                    <MenuItem onAction="#handleSaveProject" text="Save Project" />
+                    <MenuItem onAction="#handleExit" text="Exit" />
+                </Menu>
+                <Menu text="Edit">
+                    <MenuItem onAction="#handleUndo" text="Undo" />
+                    <MenuItem onAction="#handleRedo" text="Redo" />
+                </Menu>
+                <Menu text="Model">
+                    <MenuItem onAction="#handleManageActors" text="Manage Actors" />
+                    <MenuItem onAction="#handleManageUseCases" text="Manage Use Cases" />
+                </Menu>
+                <Menu text="Tools">
+                    <MenuItem onAction="#handleGenerateCode" text="Generate Code" />
+                    <MenuItem onAction="#handleExportDiagram" text="Export Diagram" />
+                </Menu>
+                <Menu text="Help">
+                    <MenuItem onAction="#handleAbout" text="About" />
+                </Menu>
+            </MenuBar>
+        </top>
+
+        <left>
+            <VBox spacing="15" alignment="TOP_LEFT" style="-fx-padding: 20; -fx-background-color: #D3D3D3;">
+                <Label text="USE CASE DIAGRAM" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+                <Button onAction="#handleAddUseCaseDiagram" prefHeight="40" prefWidth="150" text="Add UseCase Diagram" />
+                <Button onAction="#handleAddActor" prefHeight="40" prefWidth="150" text="Add Actor" />
+                <Button onAction="#handleAddUseCase" prefHeight="40" prefWidth="150" text="Add Use Case" />
+                <Button onAction="#handleAddAssociation" prefHeight="40" prefWidth="150" text="Add Association" />
+                <Button onAction="#handleAddInclude" prefHeight="40" prefWidth="150" text="Add Include" />
+                <Button onAction="#handleAddExtend" prefHeight="40" prefWidth="150" text="Add Extend" />
+            </VBox>
+        </left>
+
+<center>
+        <ScrollPane fx:id="scrollPane" fitToWidth="true" fitToHeight="true" style="-fx-background-color: transparent;">
+               <Canvas fx:id="drawingCanvas" width="1000" height="1500" />
+        </ScrollPane>
+</center>
+
+        <right>
+            <VBox spacing="15" style="-fx-padding: 20; -fx-background-color:#D3D3D3;">
+                <Label text="Use Case Information" styleClass="label2" />
+                <ListView fx:id="modelInfoList" styleClass="list-view" />
+            </VBox>
+        </right>
+    </BorderPane>

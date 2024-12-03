@@ -9,6 +9,7 @@ module org.example.craftuml {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
+    requires java.desktop;
     requires jdk.sctp;
 
 
