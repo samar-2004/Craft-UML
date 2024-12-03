@@ -1,8 +1,10 @@
 package org.example.craftuml.models.ClassDiagrams;
 
+import org.example.craftuml.ClassDashboardController;
 import org.example.craftuml.models.DiagramComponent;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class ClassDiagram implements DiagramComponent {
@@ -88,4 +90,6 @@ public class ClassDiagram implements DiagramComponent {
         this.x = x;
         this.y = y;
     }
+
+
 }

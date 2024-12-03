@@ -1,21 +1,58 @@
 package org.example.craftuml;
 
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 
 import javafx.scene.Cursor;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.example.craftuml.UI.InterfaceDiagramUI;
 import org.example.craftuml.UI.classDiagramUI;
 import org.example.craftuml.models.ClassDiagrams.AttributeData;
 import org.example.craftuml.models.ClassDiagrams.ClassDiagram;
 import org.example.craftuml.models.ClassDiagrams.InterfaceData;
 import org.example.craftuml.models.ClassDiagrams.MethodData;
+
+import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.util.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import javafx.fxml.FXML;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ListView;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import org.example.craftuml.UI.InterfaceDiagramUI;
+import org.example.craftuml.UI.classDiagramUI;
+import org.example.craftuml.models.ClassDiagrams.AttributeData;
+import org.example.craftuml.models.ClassDiagrams.ClassDiagram;
+import org.example.craftuml.models.ClassDiagrams.InterfaceData;
+import org.example.craftuml.models.ClassDiagrams.MethodData;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import javax.imageio.ImageIO;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +74,8 @@ public class ClassDashboardController
     private List<ClassDiagram> classDiagrams = new ArrayList<>();
     private double dragStartX = 0;
     private double dragStartY = 0;
+    private final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
 
 
     @FXML
@@ -176,14 +215,21 @@ public class ClassDashboardController
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
 
+        // Draw class diagrams
         for (ClassDiagram diagram : classDiagrams) {
             createClassDiagram(diagram);
         }
 
+        // Draw interface diagrams
         for (InterfaceData diagram : interfaceDiagrams) {
             createInterfaceDiagram(diagram);
         }
+
+
     }
+
+    // Example method for drawing an association
+
     private void editClassDiagram(ClassDiagram classDiagram) {
         classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas, classDiagram);
         ClassDiagram updatedDiagram = classDiagramUI.showClassDiagramDialog();
@@ -358,12 +404,6 @@ public class ClassDashboardController
     }
 
 
-
-
-
-
-
-
     @FXML
     private void handleAddInterface() {
         InterfaceDiagramUI interfaceDiagramUI = new InterfaceDiagramUI(drawingCanvas);
@@ -521,14 +561,189 @@ public class ClassDashboardController
     }
 
     @FXML
-    private void handleOpenProject() {
-        System.out.println("Open Project Clicked");
+    private void handleSaveProject() {
+        // Create a FileChooser to allow the user to select the save location
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Project");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+
+        File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
+
+        if (file != null) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                // Start XML document
+                writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+                writer.write("<Project>\n");
+
+                // Write class diagrams
+                writer.write("    <ClassDiagrams>\n");
+                for (ClassDiagram diagram : classDiagrams) {
+                    writer.write("        <ClassDiagram>\n");
+                    writer.write("            <Name>" + diagram.getName() + "</Name>\n");
+                    writer.write("            <Attributes>\n");
+                    for (AttributeData attribute : diagram.getAttributes()) {
+                        writer.write("                <Attribute>\n");
+                        writer.write("                    <AccessModifier>" + attribute.getAccessModifier() + "</AccessModifier>\n");
+                        writer.write("                    <DataType>" + attribute.getDataType() + "</DataType>\n");
+                        writer.write("                    <Name>" + attribute.getName() + "</Name>\n");
+                        writer.write("                </Attribute>\n");
+                    }
+                    writer.write("            </Attributes>\n");
+                    writer.write("            <Methods>\n");
+                    for (MethodData method : diagram.getMethods()) {
+                        writer.write("                <Method>\n");
+                        writer.write("                    <AccessModifier>" + method.getAccessModifier() + "</AccessModifier>\n");
+                        writer.write("                    <ReturnType>" + method.getReturnType() + "</ReturnType>\n");
+                        writer.write("                    <Name>" + method.getName() + "</Name>\n");
+                        writer.write("                </Method>\n");
+                    }
+                    writer.write("            </Methods>\n");
+                    writer.write("        </ClassDiagram>\n");
+                }
+                writer.write("    </ClassDiagrams>\n");
+
+                // Write interface diagrams
+                writer.write("    <InterfaceDiagrams>\n");
+                for (InterfaceData diagram : interfaceDiagrams) {
+                    writer.write("        <InterfaceDiagram>\n");
+                    writer.write("            <Name>" + diagram.getName() + "</Name>\n");
+                    writer.write("            <Methods>\n");
+                    for (MethodData method : diagram.getMethods()) {
+                        writer.write("                <Method>\n");
+                        writer.write("                    <AccessModifier>" + method.getAccessModifier() + "</AccessModifier>\n");
+                        writer.write("                    <ReturnType>" + method.getReturnType() + "</ReturnType>\n");
+                        writer.write("                    <Name>" + method.getName() + "</Name>\n");
+                        writer.write("                </Method>\n");
+                    }
+                    writer.write("            </Methods>\n");
+                    writer.write("        </InterfaceDiagram>\n");
+                }
+                writer.write("    </InterfaceDiagrams>\n");
+
+                // End XML document
+                writer.write("</Project>\n");
+
+                showAlert(Alert.AlertType.INFORMATION, "Save Project", "Project saved successfully.");
+            } catch (IOException e) {
+                showAlert(Alert.AlertType.ERROR, "Save Project", "Failed to save the project.");
+                e.printStackTrace();
+            }
+        }
     }
 
     @FXML
-    private void handleSaveProject() {
-        System.out.println("Save Project Clicked");
+    private void handleOpenProject() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Project");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+
+        File file = fileChooser.showOpenDialog(drawingCanvas.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                // Clear existing diagrams
+                classDiagrams.clear();
+                interfaceDiagrams.clear();
+                redrawCanvas(); // Clear the canvas
+
+                // Load and parse the XML file
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document document = builder.parse(file);
+                document.getDocumentElement().normalize();
+
+                // Load Class Diagrams
+                NodeList classDiagramNodes = document.getElementsByTagName("ClassDiagram");
+                for (int i = 0; i < classDiagramNodes.getLength(); i++) {
+                    Element classElement = (Element) classDiagramNodes.item(i);
+                    String className = classElement.getElementsByTagName("Name").item(0).getTextContent();
+
+                    ClassDiagram classDiagram = new ClassDiagram();
+                    classDiagram.setName(className);
+
+                    // Load Attributes
+                    NodeList attributeNodes = classElement.getElementsByTagName("Attribute");
+                    for (int j = 0; j < attributeNodes.getLength(); j++) {
+                        Element attributeElement = (Element) attributeNodes.item(j);
+                        String accessModifier = attributeElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
+                        String dataType = attributeElement.getElementsByTagName("DataType").item(0).getTextContent();
+                        String attributeName = attributeElement.getElementsByTagName("Name").item(0).getTextContent();
+
+                        AttributeData attribute = new AttributeData();
+                        attribute.setAccessModifier(accessModifier);
+                        attribute.setDataType(dataType);
+                        attribute.setName(attributeName);
+                        classDiagram.getAttributes().add(attribute);
+                    }
+
+                    // Load Methods
+                    NodeList methodNodes = classElement.getElementsByTagName("Method");
+                    for (int j = 0; j < methodNodes.getLength(); j++) {
+                        Element methodElement = (Element) methodNodes.item(j);
+                        String accessModifier = methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
+                        String returnType = methodElement.getElementsByTagName("ReturnType").item(0).getTextContent();
+                        String methodName = methodElement.getElementsByTagName("Name").item(0).getTextContent();
+
+                        MethodData method = new MethodData();
+                        method.setAccessModifier(accessModifier);
+                        method.setReturnType(returnType);
+                        method.setName(methodName);
+                        classDiagram.getMethods().add(method);
+                    }
+
+
+                    // Add the class diagram to the list
+                    classDiagrams.add(classDiagram);
+                }
+
+                // Load Interface Diagrams
+                NodeList interfaceDiagramNodes = document.getElementsByTagName("InterfaceDiagram");
+                for (int i = 0; i < interfaceDiagramNodes.getLength(); i++) {
+                    Element interfaceElement = (Element) interfaceDiagramNodes.item(i);
+                    String interfaceName = interfaceElement.getElementsByTagName("Name").item(0).getTextContent();
+
+                    InterfaceData interfaceDiagram = new InterfaceData();
+                    interfaceDiagram.setName(interfaceName);
+
+                    // Load Methods
+                    NodeList methodNodes = interfaceElement.getElementsByTagName("Method");
+                    for (int j = 0; j < methodNodes.getLength(); j++) {
+                        Element methodElement = (Element) methodNodes.item(j);
+                        String accessModifier = methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
+                        String returnType = methodElement.getElementsByTagName("ReturnType").item(0).getTextContent();
+                        String methodName = methodElement.getElementsByTagName("Name").item(0).getTextContent();
+
+                        MethodData method = new MethodData();
+                        method.setAccessModifier(accessModifier);
+                        method.setReturnType(returnType);
+                        method.setName(methodName);
+                        interfaceDiagram.getMethods().add(method);
+                    }
+
+                    // Add the interface diagram to the list
+                    interfaceDiagrams.add(interfaceDiagram);
+                }
+
+                // Redraw the canvas with the loaded diagrams
+                redrawCanvas();
+                showAlert(Alert.AlertType.INFORMATION, "Open Project", "Project loaded successfully.");
+            } catch (Exception e) {
+                showAlert(Alert.AlertType.ERROR, "Open Project", "Failed to load the project.");
+                e.printStackTrace();
+            }
+        }
     }
+
+    // Existing methods ...
+
+    private void showAlert(Alert.AlertType alertType, String title, String message) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
 
     @FXML
     private void handleExit() {
@@ -560,15 +775,129 @@ public class ClassDashboardController
     @FXML
     private void handleGenerateCode()
     {
-        System.out.println("Generate Code Clicked");
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Generated Code");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
+        File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
+
+        if (file != null) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                // Map to hold class names for checking associations
+                Map<String, ClassDiagram> classMap = new HashMap<>();
+                for (ClassDiagram diagram : classDiagrams) {
+                    classMap.put(diagram.getName(), diagram);
+                }
+
+                // Generate Java code for each class diagram
+                for (ClassDiagram diagram : classDiagrams) {
+                    StringBuilder classCode = new StringBuilder();
+
+                    // Generate class header
+                    classCode.append("public class ").append(diagram.getName()).append(" {\n\n");
+
+                    // Generate fields (attributes)
+                    for (AttributeData attribute : diagram.getAttributes()) {
+                        classCode.append("    ")
+                                .append(mapAccessModifier(attribute.getAccessModifier()))
+                                .append(" ")
+                                .append(attribute.getDataType())
+                                .append(" ")
+                                .append(attribute.getName())
+                                .append("; // Attribute\n");
+                    }
+                    classCode.append("\n");
+
+                    // Generate methods
+                    for (MethodData method : diagram.getMethods()) {
+                        classCode.append("    ")
+                                .append(mapAccessModifier(method.getAccessModifier()))
+                                .append(" ")
+                                .append(method.getReturnType())
+                                .append(" ")
+                                .append(method.getName())
+                                .append("() {\n")
+                                .append("        // TODO: Add method implementation\n")
+                                .append("    }\n\n");
+                    }
+
+                    // Check for associations (based on attribute data types)
+                    for (AttributeData attribute : diagram.getAttributes()) {
+                        if (classMap.containsKey(attribute.getDataType())) {
+                            classCode.append("    // Association: ").append(diagram.getName())
+                                    .append(" has a reference to ").append(attribute.getDataType()).append("\n");
+                        }
+                    }
+
+                    classCode.append("}\n\n");
+                    writer.write(classCode.toString());
+                }
+
+                showAlert(Alert.AlertType.INFORMATION, "Generate Code", "Code generated successfully.");
+            } catch (IOException e) {
+                showAlert(Alert.AlertType.ERROR, "Generate Code", "Failed to save the code.");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private String mapAccessModifier(String accessModifier) {
+        switch (accessModifier) {
+            case "private":
+                return "private";
+            case "protected":
+                return "protected";
+            case "public":
+                return "public";
+            default:
+                return ""; // Default to package-private
+        }
     }
 
     @FXML
-    private void handleExportDiagram()
-    {
-        System.out.println("Export Diagram Clicked");
+
+
+    private void handleExportDiagram() {
+        try {
+            // Step 1: Take a snapshot of the canvas
+            WritableImage snapshot = drawingCanvas.snapshot(null, null);
+
+            // Step 2: Open a FileChooser for saving the image
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Export Diagram");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JPG Files", "*.jpg"));
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Files", "*.png"));
+
+            // Step 3: Show save dialog to get the destination file
+            File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
+            if (file != null) {
+                // Step 4: Write the snapshot to the file
+                String extension = getFileExtension(file.getName());
+                if (extension.equals("jpg") || extension.equals("png")) {
+                    ImageIO.write(SwingFXUtils.fromFXImage(snapshot, null), extension, file);
+                    System.out.println("Diagram exported successfully to: " + file.getAbsolutePath());
+                } else {
+                    showError("Invalid File Type", "Please save the file with .jpg or .png extension.");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Export Failed", "An error occurred while exporting the diagram: " + e.getMessage());
+        }
     }
 
+    // Helper Method: Get file extension
+    private String getFileExtension(String fileName) {
+        int lastIndex = fileName.lastIndexOf('.');
+        return (lastIndex == -1) ? "" : fileName.substring(lastIndex + 1).toLowerCase();
+    }
+
+    // Helper Method: Show error dialog
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
     @FXML
     private void handleAbout()
     {
@@ -578,4 +907,5 @@ public class ClassDashboardController
         alert.setContentText("Craft UML - A tool for creating UML diagrams and generating code.");
         alert.showAndWait();
     }
+
 }
