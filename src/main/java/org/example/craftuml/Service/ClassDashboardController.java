@@ -11,10 +11,12 @@ import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.util.Pair;
 import org.example.craftuml.UI.InterfaceDiagramUI;
@@ -246,6 +248,29 @@ public class ClassDashboardController {
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
+            associations.removeIf(relationship ->
+                    relationship.getSourceClass().equals(classDiagram) ||
+                            relationship.getTargetClass().equals(classDiagram)
+            );
+
+            compositions.removeIf(relationship ->
+                    relationship.getSourceClass().equals(classDiagram) ||
+                            relationship.getTargetClass().equals(classDiagram)
+            );
+
+            aggregations.removeIf(relationship ->
+                    relationship.getSourceClass().equals(classDiagram) ||
+                            relationship.getTargetClass().equals(classDiagram)
+            );
+            realizations.removeIf(relationship ->
+                    relationship.getSourceClass().equals(classDiagram) ||
+                            (relationship.getTargetInterface() != null &&
+                                    relationship.getTargetInterface().equals(classDiagram))
+            );
+            generalizations.removeIf(relationship ->
+                    relationship.getSourceClass().equals(classDiagram) ||
+                            relationship.getTargetClass().equals(classDiagram)
+            );
             classDiagrams.remove(classDiagram);
             activeDiagram = null;
             redrawCanvas();
@@ -1227,8 +1252,56 @@ public class ClassDashboardController {
 
     @FXML
     private void handleNewProject() {
-        System.out.println("New Project Clicked");
+        Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmationAlert.setTitle("New Project");
+        confirmationAlert.setHeaderText("Are you sure you want to create a new project?");
+        confirmationAlert.setContentText("Unsaved changes will be lost.");
+
+        Optional<ButtonType> result = confirmationAlert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            clearWorkspace();
+            System.out.println("New project initialized.");
+        } else {
+            System.out.println("New project creation canceled.");
+        }
     }
+    private void clearWorkspace() {
+        activeDiagram = null;
+        activeInterface = null;
+        activeRelationship = null;
+        classDiagram = null;
+        interfaceDiagram = null;
+
+        obstacles.clear();
+        interfaceDiagrams.clear();
+        classDiagrams.clear();
+        associations.clear();
+        compositions.clear();
+        aggregations.clear();
+        realizations.clear();
+        generalizations.clear();
+
+        isDraggingSource = false;
+        isDraggingTarget = false;
+
+        dragStartX = 0;
+        dragStartY = 0;
+
+        if (drawingCanvas != null) {
+            GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
+            gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
+        }
+
+        if (modelInfoList != null) {
+            modelInfoList.getItems().clear();
+        }
+
+        if (contextMenu != null) {
+            contextMenu.hide();
+        }
+        System.out.println("Workspace cleared and reset to initial state.");
+    }
+
 
     @FXML
     private void handleSaveProject() {
@@ -1418,29 +1491,18 @@ public class ClassDashboardController {
     }
     @FXML
     private void handleExit() {
-        System.exit(0);
-    }
+        Alert exitConfirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        exitConfirmation.setTitle("Exit Application");
+        exitConfirmation.setHeaderText("Are you sure you want to exit?");
+        exitConfirmation.setContentText("Any unsaved changes will be lost.");
 
-    @FXML
-    private void handleUndo() {
-        System.out.println("Undo Clicked");
-    }
+        Optional<ButtonType> result = exitConfirmation.showAndWait();
 
-    @FXML
-    private void handleRedo() {
-        System.out.println("Redo Clicked");
-    }
-
-    @FXML
-    private void handleManageComponents()
-    {
-        System.out.println("Manage Components Clicked");
-    }
-
-    @FXML
-    private void handleManageRelationships()
-    {
-        System.out.println("Manage Relationships Clicked");
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            System.exit(0);
+        } else {
+            System.out.println("Exit canceled by the user.");
+        }
     }
 
     @FXML
@@ -1557,12 +1619,45 @@ public class ClassDashboardController {
 
 
     @FXML
-    private void handleAbout()
-    {
+    private void handleAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("About");
-        alert.setHeaderText("Craft UML");
-        alert.setContentText("Craft UML - A tool for creating UML diagrams and generating code.");
+        alert.setTitle("About Craft UML");
+        alert.setHeaderText("Craft UML - UML Diagramming Tool");
+
+        String content = "Craft UML is a tool designed to help users create UML diagrams with ease. " +
+                "The application supports various types of diagrams including class diagrams, " +
+                "sequence diagrams, and use-case diagrams. Additionally, it allows users to generate " +
+                "code based on the designed diagrams, streamlining the software development process.\n\n" +
+                "Creators:\n" +
+                "Samar\n" +
+                "Noman\n" +
+                "Hassaan\n\n" +
+                "Version: 1.0.0\n" +
+                "For more information, visit: www.craftuml.com";
+
+        alert.setContentText(content);
+
+        TextFlow textFlow = new TextFlow();
+        Text text = new Text(content);
+        text.setStyle("-fx-font-size: 14px; -fx-font-family: Arial; -fx-fill: #333;");
+        textFlow.getChildren().add(text);
+
+        // Set the preferred width of the textFlow to control wrapping
+        textFlow.setMaxWidth(400); // You can adjust this value based on your preference
+
+        // Add TextFlow to the alert
+        alert.getDialogPane().setContent(textFlow);
+
+        // Set the maximum width of the alert dialog to fit the screen
+        alert.getDialogPane().setPrefWidth(450);  // Adjust width as necessary to fit within the screen size
+
+        // Optionally, set a minimum height
+        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+
+        alert.getDialogPane().getStyleClass().add("about-alert");
+
         alert.showAndWait();
     }
+
+
 }

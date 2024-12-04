@@ -1,13 +1,18 @@
 package org.example.craftuml.Service;
 
+import javafx.animation.FadeTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class HelloController {
     private Stage stage;
+    @FXML
+    private Label pressKeyLabel;
 
     public void setStage(Stage stage) {
         this.stage = stage;
@@ -20,6 +25,16 @@ public class HelloController {
 
     @FXML
     public void initialize() {
+        if (pressKeyLabel != null) {
+            FadeTransition fadeTransition = new FadeTransition(Duration.seconds(0.8), pressKeyLabel);
+            fadeTransition.setFromValue(1.0);  // Fully visible
+            fadeTransition.setToValue(0.1);   // Mostly transparent
+            fadeTransition.setCycleCount(FadeTransition.INDEFINITE); // Repeat indefinitely
+            fadeTransition.setAutoReverse(true); // Reverse the fade direction
+
+            // Start the animation
+            fadeTransition.play();
+        }
         if (this.stage != null && this.stage.getScene() != null) {
             Scene scene = this.stage.getScene();
             scene.setOnKeyPressed(this::handleKeyPress);
