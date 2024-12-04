@@ -519,17 +519,11 @@ public class UseCaseDashboardController {
 
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(useCaseName -> {
-            // Validate the name format
-            if (!isUpperCamelCase(useCaseName)) {
-                showErrorMessage("The name must follow UpperCamelCase format. Example: 'ExampleName' or 'Example Name'.");
-                return;
-            }
-
             // Check for duplicate use case name in the `useCases` list
-            boolean nameExists = useCases.stream()
-                    .anyMatch(useCase -> useCase.getName().equalsIgnoreCase(useCaseName));
+            boolean nameExists = useCases.stream().anyMatch(useCase -> useCase.getName().equalsIgnoreCase(useCaseName));
 
             if (nameExists) {
+                // Show error message
                 showErrorMessage("A use case with this name already exists.");
             } else {
                 // Create and add the use case
@@ -1030,20 +1024,19 @@ public class UseCaseDashboardController {
 
         // Center text in the oval
         gc.setFill(Color.BLACK);
-        double centerX = useCase.getX() + ovalWidth / 2; // Center X of the oval
-        double centerY = useCase.getY() + ovalHeight / 2; // Center Y of the oval
-        double totalTextHeight = textHeight * lines.size(); // Total height of all text lines
-        double startY = centerY - totalTextHeight / 2 + textHeight; // Starting Y-position for text
+        double centerX = useCase.getX() + ovalWidth / 2;
+        double totalTextHeight = textHeight * lines.size();
+        double centerY = useCase.getY() + (ovalHeight - totalTextHeight) / 2 + textHeight;
 
         // Draw each line of text
         for (int i = 0; i < lines.size(); i++) {
             textHelper.setText(lines.get(i));
             double lineWidth = textHelper.getBoundsInLocal().getWidth();
-            double startX = centerX - lineWidth / 2; // Center each line horizontally
-            gc.fillText(lines.get(i), startX, startY + i * textHeight); // Adjust vertical position for each line
+            double startX = centerX - lineWidth / 2;
+            double startY = centerY + i * textHeight;  // Adjust vertical position for each line
+            gc.fillText(lines.get(i), startX, startY);
         }
     }
-
 
     @FXML
     private void handleAddAssociation() {
