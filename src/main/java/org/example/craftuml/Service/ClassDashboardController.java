@@ -79,31 +79,34 @@ public class ClassDashboardController {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
 
+        // Draw Class Diagrams
         for (ClassDiagram diagram : classDiagrams) {
             createClassDiagram(diagram);
         }
 
+        // Draw Interface Diagrams
         for (InterfaceData diagram : interfaceDiagrams) {
             createInterfaceDiagram(diagram);
         }
 
+        // Draw Relationships
         for (Relationship relationship : associations) {
-            relationship.draw(gc);
-        }
-        for (Relationship relationship : compositions) {
-            relationship.draw(gc);
+            relationship.drawAssociation(gc);
         }
         for (Relationship relationship : aggregations) {
-            relationship.draw(gc);
+            relationship.drawAggregation(gc);
         }
-        for (Relationship relationship : realizations) {
-            relationship.drawRealization(gc);
+        for (Relationship relationship : compositions) {
+            relationship.drawComposition(gc);
         }
         for (Relationship relationship : generalizations) {
             relationship.drawGeneralization(gc);
         }
-
+        for (Relationship relationship : realizations) {
+            relationship.drawRealization(gc);
+        }
     }
+
 
     @FXML
     private void handleClassDiagram() {
@@ -1156,14 +1159,7 @@ public class ClassDashboardController {
         }
     }
 
-    private InterfaceData findInterfaceDiagramByName(String value) {
-        for (InterfaceData diagram : interfaceDiagrams) {
-            if (diagram.getName().equals(value)) {
-                return diagram;
-            }
-        }
-        throw new IllegalArgumentException("No interface diagram found with name: " + value);
-    }
+
 
     private Pair<String, String> promptForSourceAndTargetInterface() {
         Dialog<Pair<String, String>> dialog = new Dialog<>();
@@ -1231,12 +1227,12 @@ public class ClassDashboardController {
     }
 
     @FXML
+
+
     private void handleSaveProject() {
-        // Create a FileChooser to allow the user to select the save location
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Project");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
-
         File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
 
         if (file != null) {
@@ -1245,11 +1241,13 @@ public class ClassDashboardController {
                 writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
                 writer.write("<Project>\n");
 
-                // Write class diagrams
+                // Save Class Diagrams
                 writer.write("    <ClassDiagrams>\n");
                 for (ClassDiagram diagram : classDiagrams) {
                     writer.write("        <ClassDiagram>\n");
                     writer.write("            <Name>" + diagram.getName() + "</Name>\n");
+                    writer.write("            <X>" + diagram.getX() + "</X>\n");  // Save X coordinate
+                    writer.write("            <Y>" + diagram.getY() + "</Y>\n");  // Save Y coordinate
                     writer.write("            <Attributes>\n");
                     for (AttributeData attribute : diagram.getAttributes()) {
                         writer.write("                <Attribute>\n");
@@ -1272,11 +1270,13 @@ public class ClassDashboardController {
                 }
                 writer.write("    </ClassDiagrams>\n");
 
-                // Write interface diagrams
+                // Save Interface Diagrams
                 writer.write("    <InterfaceDiagrams>\n");
                 for (InterfaceData diagram : interfaceDiagrams) {
                     writer.write("        <InterfaceDiagram>\n");
                     writer.write("            <Name>" + diagram.getName() + "</Name>\n");
+                    writer.write("            <X>" + diagram.getX() + "</X>\n");  // Save X coordinate
+                    writer.write("            <Y>" + diagram.getY() + "</Y>\n");  // Save Y coordinate
                     writer.write("            <Methods>\n");
                     for (MethodData method : diagram.getMethods()) {
                         writer.write("                <Method>\n");
@@ -1290,6 +1290,25 @@ public class ClassDashboardController {
                 }
                 writer.write("    </InterfaceDiagrams>\n");
 
+                // Save Relationships (including Realization relationships with interfaces)
+                writer.write("    <Relationships>\n");
+                for (Relationship relationship : associations) {
+                    saveRelationship(writer, relationship, "Association");
+                }
+                for (Relationship relationship : aggregations) {
+                    saveRelationship(writer, relationship, "Aggregation");
+                }
+                for (Relationship relationship : compositions) {
+                    saveRelationship(writer, relationship, "Composition");
+                }
+                for (Relationship relationship : realizations) {
+                    saveRelationship(writer, relationship, "Realization");
+                }
+                for (Relationship relationship : generalizations) {
+                    saveRelationship(writer, relationship, "Generalization");
+                }
+                writer.write("    </Relationships>\n");
+
                 // End XML document
                 writer.write("</Project>\n");
 
@@ -1301,7 +1320,29 @@ public class ClassDashboardController {
         }
     }
 
+    private void saveRelationship(BufferedWriter writer, Relationship relationship, String type) throws IOException {
+        writer.write("        <Relationship>\n");
+        writer.write("            <Type>" + type + "</Type>\n");
+        writer.write("            <Source>" + relationship.getSourceClass().getName() + "</Source>\n");
+
+        // If it's a Realization, the target is an interface, otherwise it's a class
+        String targetName = (relationship.getTargetInterface() != null) ? relationship.getTargetInterface().getName() : relationship.getTargetClass().getName();
+        writer.write("            <Target>" + targetName + "</Target>\n");
+
+        writer.write("            <Name>" + relationship.getRelationName() + "</Name>\n");
+
+        // Save coordinates for the relationship (source and target)
+        writer.write("            <SourceX>" + relationship.getStartX() + "</SourceX>\n");  // Source X
+        writer.write("            <SourceY>" + relationship.getStartY() + "</SourceY>\n");  // Source Y
+        writer.write("            <TargetX>" + relationship.getEndX() + "</TargetX>\n");    // Target X
+        writer.write("            <TargetY>" + relationship.getEndY() + "</TargetY>\n");    // Target Y
+
+        writer.write("        </Relationship>\n");
+    }
+
+
     @FXML
+
     private void handleOpenProject() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Project");
@@ -1311,9 +1352,14 @@ public class ClassDashboardController {
 
         if (file != null) {
             try {
-                // Clear existing diagrams
+                // Clear existing diagrams and relationships
                 classDiagrams.clear();
                 interfaceDiagrams.clear();
+                associations.clear();
+                aggregations.clear();
+                compositions.clear();
+                realizations.clear();
+                generalizations.clear();
                 redrawCanvas(); // Clear the canvas
 
                 // Load and parse the XML file
@@ -1326,43 +1372,7 @@ public class ClassDashboardController {
                 NodeList classDiagramNodes = document.getElementsByTagName("ClassDiagram");
                 for (int i = 0; i < classDiagramNodes.getLength(); i++) {
                     Element classElement = (Element) classDiagramNodes.item(i);
-                    String className = classElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                    ClassDiagram classDiagram = new ClassDiagram();
-                    classDiagram.setName(className);
-
-                    // Load Attributes
-                    NodeList attributeNodes = classElement.getElementsByTagName("Attribute");
-                    for (int j = 0; j < attributeNodes.getLength(); j++) {
-                        Element attributeElement = (Element) attributeNodes.item(j);
-                        String accessModifier = attributeElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
-                        String dataType = attributeElement.getElementsByTagName("DataType").item(0).getTextContent();
-                        String attributeName = attributeElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                        AttributeData attribute = new AttributeData();
-                        attribute.setAccessModifier(accessModifier);
-                        attribute.setDataType(dataType);
-                        attribute.setName(attributeName);
-                        classDiagram.getAttributes().add(attribute);
-                    }
-
-                    // Load Methods
-                    NodeList methodNodes = classElement.getElementsByTagName("Method");
-                    for (int j = 0; j < methodNodes.getLength(); j++) {
-                        Element methodElement = (Element) methodNodes.item(j);
-                        String accessModifier = methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
-                        String returnType = methodElement.getElementsByTagName("ReturnType").item(0).getTextContent();
-                        String methodName = methodElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                        MethodData method = new MethodData();
-                        method.setAccessModifier(accessModifier);
-                        method.setReturnType(returnType);
-                        method.setName(methodName);
-                        classDiagram.getMethods().add(method);
-                    }
-
-
-                    // Add the class diagram to the list
+                    ClassDiagram classDiagram = loadClassDiagram(classElement);
                     classDiagrams.add(classDiagram);
                 }
 
@@ -1370,31 +1380,19 @@ public class ClassDashboardController {
                 NodeList interfaceDiagramNodes = document.getElementsByTagName("InterfaceDiagram");
                 for (int i = 0; i < interfaceDiagramNodes.getLength(); i++) {
                     Element interfaceElement = (Element) interfaceDiagramNodes.item(i);
-                    String interfaceName = interfaceElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                    InterfaceData interfaceDiagram = new InterfaceData();
-                    interfaceDiagram.setName(interfaceName);
-
-                    // Load Methods
-                    NodeList methodNodes = interfaceElement.getElementsByTagName("Method");
-                    for (int j = 0; j < methodNodes.getLength(); j++) {
-                        Element methodElement = (Element) methodNodes.item(j);
-                        String accessModifier = methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
-                        String returnType = methodElement.getElementsByTagName("ReturnType").item(0).getTextContent();
-                        String methodName = methodElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                        MethodData method = new MethodData();
-                        method.setAccessModifier(accessModifier);
-                        method.setReturnType(returnType);
-                        method.setName(methodName);
-                        interfaceDiagram.getMethods().add(method);
-                    }
-
-                    // Add the interface diagram to the list
+                    InterfaceData interfaceDiagram = loadInterfaceDiagram(interfaceElement);
                     interfaceDiagrams.add(interfaceDiagram);
                 }
 
-                // Redraw the canvas with the loaded diagrams
+                // Load Relationships
+                NodeList relationshipNodes = document.getElementsByTagName("Relationship");
+                for (int i = 0; i < relationshipNodes.getLength(); i++) {
+                    Element relationshipElement = (Element) relationshipNodes.item(i);
+                    Relationship relationship = loadRelationship(relationshipElement);
+                    addToRelationshipList(relationship);
+                }
+
+                // Redraw the canvas with the loaded diagrams and relationships
                 redrawCanvas();
                 showAlert(Alert.AlertType.INFORMATION, "Open Project", "Project loaded successfully.");
             } catch (Exception e) {
@@ -1403,6 +1401,137 @@ public class ClassDashboardController {
             }
         }
     }
+
+    private ClassDiagram loadClassDiagram(Element classElement) {
+        String className = classElement.getElementsByTagName("Name").item(0).getTextContent();
+        double x = Double.parseDouble(classElement.getElementsByTagName("X").item(0).getTextContent()); // Load X coordinate
+        double y = Double.parseDouble(classElement.getElementsByTagName("Y").item(0).getTextContent()); // Load Y coordinate
+        ClassDiagram classDiagram = new ClassDiagram();
+        classDiagram.setName(className);
+        classDiagram.setX(x);  // Set X coordinate
+        classDiagram.setY(y);
+        // Load Attributes
+        NodeList attributeNodes = classElement.getElementsByTagName("Attribute");
+        for (int j = 0; j < attributeNodes.getLength(); j++) {
+            Element attributeElement = (Element) attributeNodes.item(j);
+            AttributeData attribute = new AttributeData();
+            attribute.setAccessModifier(attributeElement.getElementsByTagName("AccessModifier").item(0).getTextContent());
+            attribute.setDataType(attributeElement.getElementsByTagName("DataType").item(0).getTextContent());
+            attribute.setName(attributeElement.getElementsByTagName("Name").item(0).getTextContent());
+            classDiagram.getAttributes().add(attribute);
+        }
+
+        // Load Methods
+        NodeList methodNodes = classElement.getElementsByTagName("Method");
+        for (int j = 0; j < methodNodes.getLength(); j++) {
+            Element methodElement = (Element) methodNodes.item(j);
+            MethodData method = new MethodData();
+            method.setAccessModifier(methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent());
+            method.setReturnType(methodElement.getElementsByTagName("ReturnType").item(0).getTextContent());
+            method.setName(methodElement.getElementsByTagName("Name").item(0).getTextContent());
+            classDiagram.getMethods().add(method);
+        }
+
+        return classDiagram;
+    }
+
+    private InterfaceData loadInterfaceDiagram(Element interfaceElement) {
+        String interfaceName = interfaceElement.getElementsByTagName("Name").item(0).getTextContent();
+        double x = Double.parseDouble(interfaceElement.getElementsByTagName("X").item(0).getTextContent());  // Load X coordinate
+        double y = Double.parseDouble(interfaceElement.getElementsByTagName("Y").item(0).getTextContent());  // Load Y coordinate
+
+        InterfaceData interfaceDiagram = new InterfaceData();
+        interfaceDiagram.setName(interfaceName);
+        interfaceDiagram.setX(x);  // Set X coordinate
+        interfaceDiagram.setY(y);
+
+        // Load Methods
+        NodeList methodNodes = interfaceElement.getElementsByTagName("Method");
+        for (int j = 0; j < methodNodes.getLength(); j++) {
+            Element methodElement = (Element) methodNodes.item(j);
+            MethodData method = new MethodData();
+            method.setAccessModifier(methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent());
+            method.setReturnType(methodElement.getElementsByTagName("ReturnType").item(0).getTextContent());
+            method.setName(methodElement.getElementsByTagName("Name").item(0).getTextContent());
+            interfaceDiagram.getMethods().add(method);
+        }
+
+        return interfaceDiagram;
+    }
+
+    private Relationship loadRelationship(Element relationshipElement) {
+        String type = relationshipElement.getElementsByTagName("Type").item(0).getTextContent();
+        String sourceName = relationshipElement.getElementsByTagName("Source").item(0).getTextContent();
+        String targetName = relationshipElement.getElementsByTagName("Target").item(0).getTextContent();
+        String relationName = relationshipElement.getElementsByTagName("Name").item(0).getTextContent();
+
+        double sourceX = Double.parseDouble(relationshipElement.getElementsByTagName("SourceX").item(0).getTextContent());
+        double sourceY = Double.parseDouble(relationshipElement.getElementsByTagName("SourceY").item(0).getTextContent());
+        double targetX = Double.parseDouble(relationshipElement.getElementsByTagName("TargetX").item(0).getTextContent());
+        double targetY = Double.parseDouble(relationshipElement.getElementsByTagName("TargetY").item(0).getTextContent());
+
+        ClassDiagram source = findClassDiagramByName(sourceName);
+        ClassDiagram target = null;
+        InterfaceData targetInterface = null;
+
+        if (type.equals("Realization")) {
+            targetInterface = findInterfaceDiagramByName(targetName);
+        } else {
+            target = findClassDiagramByName(targetName);
+        }
+
+        Relationship relationship = new Relationship(source, target, type, "0", "0", obstacles, relationName);
+        relationship.setStartX(sourceX); // Set SourceX
+        relationship.setStartY(sourceY); // Set SourceY
+        relationship.setEndX(targetX);   // Set TargetX
+        relationship.setEndY(targetY);   // Set TargetY
+
+        if (type.equals("Realization")) {
+            relationship.setTargetInterface(targetInterface);
+        }
+
+        return relationship;
+    }
+
+
+    private void addToRelationshipList(Relationship relationship) {
+        switch (relationship.getType()) {
+            case "Association":
+                associations.add(relationship);
+                break;
+            case "Aggregation":
+                aggregations.add(relationship);
+                break;
+            case "Composition":
+                compositions.add(relationship);
+                break;
+            case "Realization":
+                realizations.add(relationship);
+                break;
+            case "Generalization":
+                generalizations.add(relationship);
+                break;
+        }
+    }
+
+    private ClassDiagram findClassDiagramByName(String name) {
+        for (ClassDiagram diagram : classDiagrams) {
+            if (diagram.getName().equals(name)) {
+                return diagram;
+            }
+        }
+        throw new IllegalArgumentException("No class diagram found with name: " + name);
+    }
+
+    private InterfaceData findInterfaceDiagramByName(String name) {
+        for (InterfaceData diagram : interfaceDiagrams) {
+            if (diagram.getName().equals(name)) {
+                return diagram;
+            }
+        }
+        throw new IllegalArgumentException("No interface diagram found with name: " + name);
+    }
+
     private void showAlert(Alert.AlertType alertType, String title, String message) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
@@ -1444,8 +1573,8 @@ public class ClassDashboardController {
     }
 
     @FXML
-    private void handleGenerateCode()
-    {
+
+    private void handleGenerateCode() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Generated Code");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
@@ -1453,7 +1582,7 @@ public class ClassDashboardController {
 
         if (file != null) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-                // Map to hold class names for checking associations
+                // Map to hold class diagrams for relationship lookups
                 Map<String, ClassDiagram> classMap = new HashMap<>();
                 for (ClassDiagram diagram : classDiagrams) {
                     classMap.put(diagram.getName(), diagram);
@@ -1462,8 +1591,21 @@ public class ClassDashboardController {
                 for (ClassDiagram diagram : classDiagrams) {
                     StringBuilder classCode = new StringBuilder();
 
-                    classCode.append("public class ").append(diagram.getName()).append(" {\n\n");
+                    // Start Class Definition
+                    classCode.append("public class ").append(diagram.getName());
+                    for (Relationship relationship : generalizations) {
+                        if (relationship.getSourceClass().equals(diagram)) {
+                            classCode.append(" extends ").append(relationship.getTargetClass().getName());
+                        }
+                    }
+                    for (Relationship relationship : realizations) {
+                        if (relationship.getSourceClass().equals(diagram)) {
+                            classCode.append(" implements ").append(relationship.getTargetInterface().getName());
+                        }
+                    }
+                    classCode.append(" {\n\n");
 
+                    // Fields
                     for (AttributeData attribute : diagram.getAttributes()) {
                         classCode.append("    ")
                                 .append(mapAccessModifier(attribute.getAccessModifier()))
@@ -1473,8 +1615,43 @@ public class ClassDashboardController {
                                 .append(attribute.getName())
                                 .append("; // Attribute\n");
                     }
-                    classCode.append("\n");
 
+                    // Relationships as Fields
+                    for (Relationship relationship : associations) {
+                        if (relationship.getSourceClass().equals(diagram)) {
+                            classCode.append("    // Association\n")
+                                    .append("    ")
+                                    .append("private ")
+                                    .append(relationship.getTargetClass().getName())
+                                    .append(" ")
+                                    .append(relationship.getRelationName())
+                                    .append(";\n");
+                        }
+                    }
+                    for (Relationship relationship : aggregations) {
+                        if (relationship.getSourceClass().equals(diagram)) {
+                            classCode.append("    // Aggregation\n")
+                                    .append("    ")
+                                    .append("private ")
+                                    .append(relationship.getTargetClass().getName())
+                                    .append(" ")
+                                    .append(relationship.getRelationName())
+                                    .append(";\n");
+                        }
+                    }
+                    for (Relationship relationship : compositions) {
+                        if (relationship.getSourceClass().equals(diagram)) {
+                            classCode.append("    // Composition\n")
+                                    .append("    ")
+                                    .append("private ")
+                                    .append(relationship.getTargetClass().getName())
+                                    .append(" ")
+                                    .append(relationship.getRelationName())
+                                    .append(";\n");
+                        }
+                    }
+
+                    // Methods
                     for (MethodData method : diagram.getMethods()) {
                         classCode.append("    ")
                                 .append(mapAccessModifier(method.getAccessModifier()))
@@ -1485,13 +1662,6 @@ public class ClassDashboardController {
                                 .append("() {\n")
                                 .append("        // TODO: Add method implementation\n")
                                 .append("    }\n\n");
-                    }
-
-                    for (AttributeData attribute : diagram.getAttributes()) {
-                        if (classMap.containsKey(attribute.getDataType())) {
-                            classCode.append("    // Association: ").append(diagram.getName())
-                                    .append(" has a reference to ").append(attribute.getDataType()).append("\n");
-                        }
                     }
 
                     classCode.append("}\n\n");
@@ -1529,7 +1699,7 @@ public class ClassDashboardController {
             // Step 2: Open a FileChooser for saving the image
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Export Diagram");
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JPG Files", "*.jpg"));
+
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Files", "*.png"));
 
             // Step 3: Show save dialog to get the destination file

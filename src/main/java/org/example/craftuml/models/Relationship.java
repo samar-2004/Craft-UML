@@ -151,110 +151,6 @@ public class Relationship {
     }
 
 
-
-    public void drawRealization(GraphicsContext gc)
-    {
-        double[] originalDashes = gc.getLineDashes();
-
-        double x1 = sourceClass.getX();
-        double y1 = sourceClass.getY();
-        double x2 = targetInterface.getX();
-        double y2 = targetInterface.getY();
-
-        double sourceClassWidth = sourceClass.getWidth();
-        double sourceClassHeight = sourceClass.getHeight();
-        double targetInterfaceWidth = targetInterface.getWidth();
-        double targetInterfaceHeight = targetInterface.getHeight();
-
-        double[] adjustedSourceClass = calculateOrthogonalBorderIntersection(
-                x1, y1, sourceClassWidth, sourceClassHeight, x1, y1, x2, y2
-        );
-        double[] adjustedTargetInterface = calculateOrthogonalBorderIntersection(
-                x2, y2, targetInterfaceWidth, targetInterfaceHeight, x2, y2, x1, y1
-        );
-        double adjX1 = adjustedSourceClass[0];
-        double adjY1 = adjustedSourceClass[1];
-        double adjX2 = adjustedTargetInterface[0];
-        double adjY2 = adjustedTargetInterface[1];
-
-        startX = adjX1;
-        startY = adjY1;
-        endX = adjX2;
-        endY = adjY2;
-
-        gc.setLineWidth(2);
-
-
-        gc.setLineDashes(10, 5);
-
-        gc.setStroke(Color.BLACK);
-
-        double arrowLength = 15.0;
-        double angle = Math.atan2(adjY2 - adjY1, adjX2 - adjX1);
-
-        double stopX = adjX2 - arrowLength * Math.cos(angle);
-        double stopY = adjY2 - arrowLength * Math.sin(angle);
-
-        gc.setStroke(Color.BLACK);
-
-        gc.strokeLine(adjX1, adjY1, stopX, stopY);
-
-        gc.setLineDashes(originalDashes);
-        drawEmptyArrowhead(gc, stopX, stopY, adjX2, adjY2);
-    }
-
-
-    public void drawGeneralization(GraphicsContext gc)
-    {
-        double[] originalDashes = gc.getLineDashes();
-
-        double x1 = sourceClass.getX();
-        double y1 = sourceClass.getY();
-        double x2 = targetClass.getX();
-        double y2 = targetClass.getY();
-
-        double sourceClassWidth = sourceClass.getWidth();
-        double sourceClassHeight = sourceClass.getHeight();
-        double targetInterfaceWidth = targetClass.getWidth();
-        double targetInterfaceHeight = targetClass.getHeight();
-
-        double[] adjustedSourceClass = calculateOrthogonalBorderIntersection(
-                x1, y1, sourceClassWidth, sourceClassHeight, x1, y1, x2, y2
-        );
-        double[] adjustedTargetInterface = calculateOrthogonalBorderIntersection(
-                x2, y2, targetInterfaceWidth, targetInterfaceHeight, x2, y2, x1, y1
-        );
-        double adjX1 = adjustedSourceClass[0];
-        double adjY1 = adjustedSourceClass[1];
-        double adjX2 = adjustedTargetInterface[0];
-        double adjY2 = adjustedTargetInterface[1];
-
-        startX = adjX1;
-        startY = adjY1;
-        endX = adjX2;
-        endY = adjY2;
-
-        gc.setLineWidth(2);
-
-        // Calculate the arrowhead offset to stop the dashed line just before it
-        double arrowLength = 15.0;  // Length of the arrowhead
-        double angle = Math.atan2(adjY2 - adjY1, adjX2 - adjX1);  // Angle of the line
-
-        // Calculate the point where the line should stop (just before the arrowhead starts)
-        double stopX = adjX2 - arrowLength * Math.cos(angle);
-        double stopY = adjY2 - arrowLength * Math.sin(angle);
-
-        // Draw the dashed line from source to the point before the arrowhead
-        gc.setStroke(Color.BLACK);
-
-        gc.strokeLine(adjX1, adjY1, stopX, stopY);
-
-        gc.setLineDashes(originalDashes);
-        // Draw the solid arrowhead
-        drawEmptyArrowhead(gc, stopX, stopY, adjX2, adjY2);
-    }
-
-
     private void drawEmptyArrowhead(GraphicsContext gc, double x1, double y1, double x2, double y2)
     {
         double angle = Math.atan2(y2 - y1, x2 - x1);
@@ -407,7 +303,18 @@ public class Relationship {
     }
 
 
-
+    public void setStartX(double startX) {
+        this.startX = startX;
+    }
+    public void setStartY(double startY) {
+        this.startY = startY;
+    }
+    public void setEndX(double endX) {
+        this.endX = endX;
+    }
+    public void setEndY(double endY) {
+        this.endY = endY;
+    }
 
     public double getStartX() {
         return startX;
@@ -424,6 +331,7 @@ public class Relationship {
     public double getEndY() {
         return endY;
     }
+
 
     public void setSourceClass(ClassDiagram sourceClass) {
         this.sourceClass = sourceClass;
@@ -487,6 +395,69 @@ public class Relationship {
 
     public String getType() {
         return type;
+    }
+    public void drawAssociation(GraphicsContext gc) {
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1);
+        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
+    }
+
+    public void drawAggregation(GraphicsContext gc) {
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1);
+        // Draw diamond at the source end
+        drawDiamond(gc, sourceClass.getX(), sourceClass.getY());
+        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
+    }
+
+    public void drawComposition(GraphicsContext gc) {
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1);
+        // Draw filled diamond at the source end
+        drawFilledDiamond(gc, sourceClass.getX(), sourceClass.getY());
+        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
+    }
+
+    public void drawGeneralization(GraphicsContext gc) {
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1);
+        // Draw open arrow at the target end
+        drawArrow(gc, targetClass.getX(), targetClass.getY());
+        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
+    }
+
+    public void drawRealization(GraphicsContext gc) {
+        gc.setStroke(Color.BLACK);
+        gc.setLineDashes(4);
+        gc.setLineWidth(1);
+        // Draw open arrow at the target end
+        drawArrow(gc, targetInterface.getX(), targetInterface.getY());
+        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetInterface.getX(), targetInterface.getY());
+        gc.setLineDashes(0); // Reset dashes
+    }
+
+    private void drawDiamond(GraphicsContext gc, double x, double y) {
+        gc.setFill(Color.WHITE);
+        gc.setStroke(Color.BLACK);
+        double[] xPoints = {x, x - 10, x, x + 10};
+        double[] yPoints = {y, y + 10, y + 20, y + 10};
+        gc.strokePolygon(xPoints, yPoints, 4);
+    }
+
+    private void drawFilledDiamond(GraphicsContext gc, double x, double y) {
+        gc.setFill(Color.BLACK);
+        gc.setStroke(Color.BLACK);
+        double[] xPoints = {x, x - 10, x, x + 10};
+        double[] yPoints = {y, y + 10, y + 20, y + 10};
+        gc.fillPolygon(xPoints, yPoints, 4);
+    }
+
+    private void drawArrow(GraphicsContext gc, double x, double y) {
+        gc.setFill(Color.WHITE);
+        gc.setStroke(Color.BLACK);
+        double[] xPoints = {x, x - 10, x + 10};
+        double[] yPoints = {y, y - 20, y - 20};
+        gc.strokePolygon(xPoints, yPoints, 3);
     }
 }
 
