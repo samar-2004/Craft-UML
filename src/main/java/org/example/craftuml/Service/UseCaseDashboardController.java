@@ -47,6 +47,9 @@ public class UseCaseDashboardController {
     private List<Actor> actors = new ArrayList<>();
     private List<UseCase> useCases = new ArrayList<>();
     private List<Association> associations = new ArrayList<>();
+    private Object draggedElement = null; // Keeps track of the current dragged element
+    private double dragOffsetX = 0;
+    private double dragOffsetY = 0;
 
     private List<UseCaseToUseCaseRelation> includeRelations = new ArrayList<>();
     private List<UseCaseToUseCaseRelation> extendRelations = new ArrayList<>();
@@ -370,56 +373,37 @@ public class UseCaseDashboardController {
 
     @FXML
     private void handleAddActor() {
-        if (activeDiagram != null) {
-            TextInputDialog dialog = new TextInputDialog("Actor Name");
-            dialog.setTitle("Add Actor");
-            dialog.setHeaderText("Enter the Actor Name");
-            dialog.setContentText("Name:");
+        TextInputDialog dialog = new TextInputDialog("Actor Name");
+        dialog.setTitle("Add Actor");
+        dialog.setHeaderText("Enter the Actor Name");
+        dialog.setContentText("Name:");
 
-            // Access the dialog's content pane for custom styling
-            dialog.getDialogPane().setStyle("-fx-background-color: #f7f7f7; -fx-border-radius: 10; -fx-padding: 20;");
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(actorName -> {
+            // Check for duplicate actor name in the `actors` list
+            boolean nameExists = actors.stream().anyMatch(actor -> actor.getName().equalsIgnoreCase(actorName));
 
-            // Style the input field
-            TextField inputField = dialog.getEditor();
-            inputField.setStyle("-fx-font-size: 14px; -fx-background-color: #ffffff; -fx-border-radius: 5; -fx-border-color: #cccccc; -fx-padding: 5;");
+            if (nameExists) {
+                // Show error message
+                showErrorMessage("An actor with this name already exists.");
+            } else {
+                // Create and add the actor
+                Actor actor = new Actor(actorName);
+                actors.add(actor);
 
-            // Style the confirm button
-            Button confirmButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-            confirmButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px; -fx-pref-width: 80px; -fx-border-radius: 5;");
-            confirmButton.setDisable(true);
+                // Position calculation (modify as needed)
+                double x = 50 + actors.size() * 50; // Example positioning logic
+                double y = 100 + actors.size() * 30;
 
-            // Disable confirm button until the input matches the UpperCamelCase format (or other validation logic)
-            inputField.textProperty().addListener((observable, oldValue, newValue) -> {
-                confirmButton.setDisable(!isUpperCamelCase(newValue)); // Adjust validation logic as needed
-            });
+                actor.setX(x);
+                actor.setY(y);
 
-            Optional<String> result = dialog.showAndWait();
-            result.ifPresent(actorName -> {
-                if (isUpperCamelCase(actorName)) { // You can replace with your own validation logic
-                    Actor actor = new Actor(actorName);
+                redrawCanvas();
 
-                    actors.add(actor);
-                    // Calculate position to avoid overlap
-                    double x = activeDiagram.getX() - 50;
-                    double y = activeDiagram.getY() + 50 + activeDiagram.getActors().size() * 80;  // Adjusting space
-
-                    // Ensure y-position doesn't overlap with the bottom of the canvas
-                    double maxY = drawingCanvas.getHeight();
-                    if (y > maxY - 60) {  // Leave some space for the actor's full figure
-                        y = maxY - 60;
-                    }
-
-                    actor.setX(x);
-                    actor.setY(y);
-
-                    activeDiagram.getActors().add(actor);
-                    redrawCanvas();
-
-                    enableActorNameEdit();
-                    enableActorDrag(actor);
-                }
-            });
-        }
+                enableNameEdit();
+                enableDragging();
+            }
+        });
     }
 
     private void drawActor(Actor actor) {
@@ -450,151 +434,121 @@ public class UseCaseDashboardController {
         gc.setFill(Color.BLACK);  // Fill color for the name text
         gc.fillText(actor.getName(), actor.getX() + 5, actor.getY() + headSize + bodyHeight + legLength + 10);  // Name below the actor
     }
+//    private void enableActorDrag(Actor actor) {
+//        // Set cursor to move when mouse hovers over the actor
+//        drawingCanvas.setOnMouseMoved(event -> {
+//            if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
+//                    event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
+//                drawingCanvas.setCursor(Cursor.MOVE);  // Change cursor to move symbol
+//            } else {
+//                drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when not hovering over the actor
+//            }
+//        });
+//
+//        // Reset previous event handlers to avoid overwriting issues
+//        drawingCanvas.setOnMousePressed(event -> {
+//            // Check if the mouse is inside the actor area
+//            if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
+//                    event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
+//                actor.setDragOffsetX(event.getX() - actor.getX()); // Store the offset during drag
+//                actor.setDragOffsetY(event.getY() - actor.getY());
+//            }
+//        });
+//
+//        drawingCanvas.setOnMouseDragged(event -> {
+//            if (actor.getDragOffsetX() != 0 && actor.getDragOffsetY() != 0) {
+//                // Calculate new position of the actor based on mouse movement
+//                double newX = event.getX() - actor.getDragOffsetX();
+//                double newY = event.getY() - actor.getDragOffsetY();
+//
+//                // Update position with constraints if necessary
+//                actor.setX(newX);
+//                actor.setY(newY);
+//
+//                redrawCanvas();
+//            }
+//        });
+//
+//        drawingCanvas.setOnMouseReleased(event -> {
+//            actor.setDragOffsetX(0);  // Reset drag offset when dragging stops
+//            actor.setDragOffsetY(0);
+//            drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when drag ends
+//        });
+//    }
 
-    private void enableActorDrag(Actor actor) {
-        // Set cursor to move when mouse hovers over the actor
-        drawingCanvas.setOnMouseMoved(event -> {
-            if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
-                    event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
-                drawingCanvas.setCursor(Cursor.MOVE);  // Change cursor to move symbol
-            } else {
-                drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when not hovering over the actor
-            }
-        });
-
-        // Reset previous event handlers to avoid overwriting issues
-        drawingCanvas.setOnMousePressed(event -> {
-            // Check if the mouse is inside the actor area
-            if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
-                    event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
-                actor.setDragOffsetX(event.getX() - actor.getX()); // Store the offset during drag
-                actor.setDragOffsetY(event.getY() - actor.getY());
-            }
-        });
-
-        drawingCanvas.setOnMouseDragged(event -> {
-            if (actor.getDragOffsetX() != 0 && actor.getDragOffsetY() != 0) {
-                // Calculate new position of the actor based on mouse movement
-                double newX = event.getX() - actor.getDragOffsetX();
-                double newY = event.getY() - actor.getDragOffsetY();
-
-                // Update position with constraints if necessary
-                actor.setX(newX);
-                actor.setY(newY);
-
-                redrawCanvas();
-            }
-        });
-
-        drawingCanvas.setOnMouseReleased(event -> {
-            actor.setDragOffsetX(0);  // Reset drag offset when dragging stops
-            actor.setDragOffsetY(0);
-            drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when drag ends
-        });
-    }
-
-    private void enableActorNameEdit() {
-        drawingCanvas.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) { // Detect double-click
-                double clickX = event.getX();
-                double clickY = event.getY();
-
-                // Use an array as a mutable wrapper for the clicked actor
-                final Actor[] clickedActorHolder = {null};
-
-                for (Actor actor : actors) {
-                    if (clickX >= actor.getX() && clickX <= actor.getX() + 30 &&
-                            clickY >= actor.getY() && clickY <= actor.getY() + 90) {
-                        clickedActorHolder[0] = actor;
-                        break;
-                    }
-                }
-
-                if (clickedActorHolder[0] != null) {
-                    // Show dialog to edit actor name
-                    TextInputDialog dialog = new TextInputDialog(clickedActorHolder[0].getName());
-                    dialog.setTitle("Edit Actor Name");
-                    dialog.setHeaderText("Edit the name of the selected actor");
-                    dialog.setContentText("Name:");
-
-                    Optional<String> result = dialog.showAndWait();
-                    result.ifPresent(newName -> {
-                        clickedActorHolder[0].setName(newName); // Update actor's name
-                        redrawCanvas(); // Refresh the canvas to show the updated name
-                    });
-                }
-            }
-        });
-    }
+//    private void enableActorNameEdit() {
+//        drawingCanvas.setOnMouseClicked(event -> {
+//            if (event.getClickCount() == 2) { // Detect double-click
+//                double clickX = event.getX();
+//                double clickY = event.getY();
+//
+//                // Use an array as a mutable wrapper for the clicked actor
+//                final Actor[] clickedActorHolder = {null};
+//
+//                for (Actor actor : actors) {
+//                    if (clickX >= actor.getX() && clickX <= actor.getX() + 30 &&
+//                            clickY >= actor.getY() && clickY <= actor.getY() + 90) {
+//                        clickedActorHolder[0] = actor;
+//                        break;
+//                    }
+//                }
+//
+//                if (clickedActorHolder[0] != null) {
+//                    // Show dialog to edit actor name
+//                    TextInputDialog dialog = new TextInputDialog(clickedActorHolder[0].getName());
+//                    dialog.setTitle("Edit Actor Name");
+//                    dialog.setHeaderText("Edit the name of the selected actor");
+//                    dialog.setContentText("Name:");
+//
+//                    Optional<String> result = dialog.showAndWait();
+//                    result.ifPresent(newName -> {
+//                        clickedActorHolder[0].setName(newName); // Update actor's name
+//                        redrawCanvas(); // Refresh the canvas to show the updated name
+//                    });
+//                }
+//            }
+//        });
+//    }
 
     @FXML
     private void handleAddUseCase() {
-        if (activeDiagram != null) {
-            TextInputDialog dialog = new TextInputDialog("UseCaseName");
-            dialog.setTitle("Add Use Case");
-            dialog.setHeaderText("Enter Use Case Name:");
-            dialog.setContentText("Name:");
+        TextInputDialog dialog = new TextInputDialog("UseCase Name");
+        dialog.setTitle("Add Use Case");
+        dialog.setHeaderText("Enter the Use Case Name");
+        dialog.setContentText("Name:");
 
-            // Access the dialog's content pane for custom styling
-            dialog.getDialogPane().setStyle("-fx-background-color: #f7f7f7; -fx-border-radius: 10; -fx-padding: 20;");
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(useCaseName -> {
+            // Validate the name format
+            if (!isUpperCamelCase(useCaseName)) {
+                showErrorMessage("The name must follow UpperCamelCase format. Example: 'ExampleName' or 'Example Name'.");
+                return;
+            }
 
-            // Style the input field
-            TextField inputField = dialog.getEditor();
-            inputField.setStyle("-fx-font-size: 14px; -fx-background-color: #ffffff; -fx-border-radius: 5; -fx-border-color: #cccccc; -fx-padding: 5;");
+            // Check for duplicate use case name in the `useCases` list
+            boolean nameExists = useCases.stream()
+                    .anyMatch(useCase -> useCase.getName().equalsIgnoreCase(useCaseName));
 
-            // Style the confirm button
-            Button confirmButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-            confirmButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px; -fx-pref-width: 80px; -fx-border-radius: 5;");
-            confirmButton.setDisable(true);
+            if (nameExists) {
+                showErrorMessage("A use case with this name already exists.");
+            } else {
+                // Create and add the use case
+                UseCase useCase = new UseCase(useCaseName);
+                useCases.add(useCase);
 
-            // Disable confirm button until the input matches the UpperCamelCase format
-            inputField.textProperty().addListener((observable, oldValue, newValue) -> {
-                confirmButton.setDisable(!isUpperCamelCase(newValue));
-            });
+                // Position calculation (modify as needed)
+                double x = 50 + useCases.size() * 50; // Example positioning logic
+                double y = 200 + useCases.size() * 30;
 
-            Optional<String> result = dialog.showAndWait();
-            result.ifPresent(useCaseName -> {
-                if (isUpperCamelCase(useCaseName)) {
-                    UseCase useCase = new UseCase(useCaseName);
+                useCase.setX(x);
+                useCase.setY(y);
 
-                    useCases.add(useCase);
-                    // Calculate position inside the diagram
-                    double padding = 20; // Space between use cases and diagram edges
-                    double useCaseWidth = 100; // Assumed width for the use case
-                    double useCaseHeight = 50; // Assumed height for the use case
+                redrawCanvas();
 
-                    double x = activeDiagram.getX() + padding + (activeDiagram.getUseCases().size() % 3) * (useCaseWidth + 20); // Arrange in rows
-                    double y = activeDiagram.getY() + padding + ((double) activeDiagram.getUseCases().size() / 3) * (useCaseHeight + 20); // Arrange in columns
-
-                    // Ensure the use case fits within the diagram
-                    if (x + useCaseWidth > activeDiagram.getX() + activeDiagram.getWidth() ||
-                            y + useCaseHeight > activeDiagram.getY() + activeDiagram.getHeight()) {
-                        // Log a message or give inline feedback in the UI if space is insufficient
-                        System.out.println("Not enough space to add another use case.");
-                        return;
-                    }
-
-                    useCase.setX(x);
-                    useCase.setY(y);
-
-                    System.out.println("Canvas Size: Width=" + drawingCanvas.getWidth() + ", Height=" + drawingCanvas.getHeight());
-                    System.out.println("Use Case Position: (" + x + ", " + y + ")");
-                    // Add to active diagram
-                    activeDiagram.getUseCases().add(useCase);
-                    System.out.println("Use cases in active diagram: " + activeDiagram.getUseCases().size());
-                    for (UseCase uc : activeDiagram.getUseCases()) {
-                        System.out.println("Use case: " + uc.getName() + " at (" + uc.getX() + ", " + uc.getY() + ")");
-                    }
-
-                    // Redraw canvas
-                    redrawCanvas();
-
-                    enableUseCaseNameEdit();
-                    // Enable dragging for the use case
-                    enableUseCaseDrag(useCase);
-                }
-            });
-        }
+                enableNameEdit();
+                enableDragging();
+            }
+        });
     }
 
     private boolean isUpperCamelCase(String name) {
@@ -605,139 +559,410 @@ public class UseCaseDashboardController {
         return name.matches(regex);
     }
 
-    private void enableUseCaseDrag(UseCase useCase) {
-        // Change cursor to move symbol when hovering over the use case
+    private void enableDragging() {
+        // Mouse moved: Change cursor to move symbol when over a draggable element
         drawingCanvas.setOnMouseMoved(event -> {
-            if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
-                    event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
-                drawingCanvas.setCursor(Cursor.MOVE);  // Change cursor to move symbol
-            } else {
-                drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when not hovering over the use case
+            boolean isHovering = false;
+
+            // Check if hovering over any actor
+            for (Actor actor : actors) {
+                if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
+                        event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
+                    drawingCanvas.setCursor(Cursor.MOVE); // Change cursor to move symbol
+                    isHovering = true;
+                    break;
+                }
+            }
+
+            // Check if hovering over any use case (if not hovering over an actor)
+            if (!isHovering) {
+                for (UseCase useCase : useCases) {
+                    if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
+                            event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
+                        drawingCanvas.setCursor(Cursor.MOVE); // Change cursor to move symbol
+                        isHovering = true;
+                        break;
+                    }
+                }
+            }
+
+            // Reset to default cursor if not hovering over any draggable element
+            if (!isHovering) {
+                drawingCanvas.setCursor(Cursor.DEFAULT);
             }
         });
 
-        // Reset previous event handlers to avoid overwriting issues
+        // Mouse pressed: Detect the element being dragged
         drawingCanvas.setOnMousePressed(event -> {
-            // Check if the mouse is inside the use case area
-            if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
-                    event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
-                useCase.setDragOffsetX(event.getX() - useCase.getX()); // Store the offset during drag
-                useCase.setDragOffsetY(event.getY() - useCase.getY());
+            draggedElement = null;
+            dragOffsetX = 0;
+            dragOffsetY = 0;
+
+            // Check if an actor is clicked
+            for (Actor actor : actors) {
+                if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
+                        event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
+                    draggedElement = actor;
+                    dragOffsetX = event.getX() - actor.getX();
+                    dragOffsetY = event.getY() - actor.getY();
+                    break;
+                }
+            }
+
+            // Check if a use case is clicked (if no actor was clicked)
+            if (draggedElement == null) {
+                for (UseCase useCase : useCases) {
+                    if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
+                            event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
+                        draggedElement = useCase;
+                        dragOffsetX = event.getX() - useCase.getX();
+                        dragOffsetY = event.getY() - useCase.getY();
+                        break;
+                    }
+                }
             }
         });
 
+        // Mouse dragged: Update the position of the dragged element
         drawingCanvas.setOnMouseDragged(event -> {
-            if (useCase.getDragOffsetX() != 0 && useCase.getDragOffsetY() != 0) {
-                // Calculate new position of the use case based on mouse movement
-                double newX = event.getX() - useCase.getDragOffsetX();
-                double newY = event.getY() - useCase.getDragOffsetY();
+            if (draggedElement != null) {
+                double newX = event.getX() - dragOffsetX;
+                double newY = event.getY() - dragOffsetY;
 
-                // Keep the use case inside the active diagram bounds
-                double minX = activeDiagram.getX() + 10;
-                double minY = activeDiagram.getY() + 10;
-                double maxX = activeDiagram.getX() + activeDiagram.getWidth() - useCase.getWidth() - 10;
-                double maxY = activeDiagram.getY() + activeDiagram.getHeight() - useCase.getHeight() - 10;
+                // Check if the dragged element is a UseCase
+                if (draggedElement instanceof UseCase) {
+                    UseCase useCase = (UseCase) draggedElement;
 
-                // Update position with constraints
-                useCase.setX(Math.max(minX, Math.min(newX, maxX)));
-                useCase.setY(Math.max(minY, Math.min(newY, maxY)));
+                    // Assuming ActiveDiagram is a predefined container with its own boundaries
+                    double activeDiagramX = activeDiagram.getX();  // ActiveDiagram's top-left X
+                    double activeDiagramY = activeDiagram.getY();  // ActiveDiagram's top-left Y
+                    double activeDiagramWidth = activeDiagram.getWidth();  // ActiveDiagram's width
+                    double activeDiagramHeight = activeDiagram.getHeight();  // ActiveDiagram's height
 
-                redrawCanvas();
+                    // Clamp the newX and newY to ensure the use case stays within the bounds of the ActiveDiagram
+                    double maxX = activeDiagramX + activeDiagramWidth - useCase.getWidth();  // Right boundary of ActiveDiagram
+                    double minX = activeDiagramX;  // Left boundary of ActiveDiagram
+                    double maxY = activeDiagramY + activeDiagramHeight - useCase.getHeight();  // Bottom boundary of ActiveDiagram
+                    double minY = activeDiagramY;  // Top boundary of ActiveDiagram
+
+                    // Apply the constraints for UseCase
+                    newX = Math.max(minX, Math.min(newX, maxX));
+                    newY = Math.max(minY, Math.min(newY, maxY));
+
+                    // Update the position of the UseCase within the ActiveDiagram
+                    useCase.setX(newX);
+                    useCase.setY(newY);
+                }
+
+                // Check if the dragged element is an Actor
+                else if (draggedElement instanceof Actor) {
+                    Actor actor = (Actor) draggedElement;
+
+                    // Clamp the position of the Actor to stay within the bounds of the whole drawingCanvas
+                    double maxX = drawingCanvas.getWidth() - actor.getWidth();  // Right boundary of the canvas
+                    double minX = 0;  // Left boundary of the canvas
+                    double maxY = drawingCanvas.getHeight() - actor.getHeight();  // Bottom boundary of the canvas
+                    double minY = 0;  // Top boundary of the canvas
+
+                    // Apply the constraints for Actor
+                    newX = Math.max(minX, Math.min(newX, maxX));
+                    newY = Math.max(minY, Math.min(newY, maxY));
+
+                    // Update the position of the Actor within the drawingCanvas
+                    actor.setX(newX);
+                    actor.setY(newY);
+                }
+
+                redrawCanvas();  // Refresh the canvas after updating the position
             }
         });
 
+
+        // Mouse released: Stop dragging
         drawingCanvas.setOnMouseReleased(event -> {
-            useCase.setDragOffsetX(0);  // Reset drag offset when dragging stops
-            useCase.setDragOffsetY(0);
-            drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when drag ends
+            draggedElement = null;
         });
     }
 
-    private void enableUseCaseNameEdit() {
-        // Right-click context menu for Edit and Delete
-        drawingCanvas.setOnMousePressed(event -> {
-            if (event.isSecondaryButtonDown()) { // Right-click detection
-                double clickX = event.getX();
-                double clickY = event.getY();
+//    private void enableUseCaseDrag(UseCase useCase) {
+//        // Change cursor to move symbol when hovering over the use case
+//        drawingCanvas.setOnMouseMoved(event -> {
+//            if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
+//                    event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
+//                drawingCanvas.setCursor(Cursor.MOVE);  // Change cursor to move symbol
+//            } else {
+//                drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when not hovering over the use case
+//            }
+//        });
+//
+//        // Reset previous event handlers to avoid overwriting issues
+//        drawingCanvas.setOnMousePressed(event -> {
+//            // Check if the mouse is inside the use case area
+//            if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
+//                    event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
+//                useCase.setDragOffsetX(event.getX() - useCase.getX()); // Store the offset during drag
+//                useCase.setDragOffsetY(event.getY() - useCase.getY());
+//            }
+//        });
+//
+//        drawingCanvas.setOnMouseDragged(event -> {
+//            if (useCase.getDragOffsetX() != 0 && useCase.getDragOffsetY() != 0) {
+//                // Calculate new position of the use case based on mouse movement
+//                double newX = event.getX() - useCase.getDragOffsetX();
+//                double newY = event.getY() - useCase.getDragOffsetY();
+//
+//                // Keep the use case inside the active diagram bounds
+//                double minX = activeDiagram.getX() + 10;
+//                double minY = activeDiagram.getY() + 10;
+//                double maxX = activeDiagram.getX() + activeDiagram.getWidth() - useCase.getWidth() - 10;
+//                double maxY = activeDiagram.getY() + activeDiagram.getHeight() - useCase.getHeight() - 10;
+//
+//                // Update position with constraints
+//                useCase.setX(Math.max(minX, Math.min(newX, maxX)));
+//                useCase.setY(Math.max(minY, Math.min(newY, maxY)));
+//
+//                redrawCanvas();
+//            }
+//        });
+//
+//        drawingCanvas.setOnMouseReleased(event -> {
+//            useCase.setDragOffsetX(0);  // Reset drag offset when dragging stops
+//            useCase.setDragOffsetY(0);
+//            drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when drag ends
+//        });
+//    }
 
-                final UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
+//    private void enableUseCaseNameEdit() {
+//        // Right-click context menu for Edit and Delete
+//        drawingCanvas.setOnMousePressed(event -> {
+//            if (event.isSecondaryButtonDown()) { // Right-click detection
+//                double clickX = event.getX();
+//                double clickY = event.getY();
+//
+//                final UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
+//
+//                if (clickedUseCase != null) {
+//                    // Create the context menu
+//                    ContextMenu contextMenu = new ContextMenu();
+//
+//                    // Edit option
+//                    MenuItem editItem = new MenuItem("Edit");
+//                    editItem.setOnAction(e -> {
+//                        TextInputDialog dialog = new TextInputDialog(clickedUseCase.getName());
+//                        dialog.setTitle("Edit Use Case Name");
+//                        dialog.setHeaderText("Edit the name of the selected use case");
+//                        dialog.setContentText("Name:");
+//
+//                        Optional<String> result = dialog.showAndWait();
+//                        result.ifPresent(newName -> {
+//                            clickedUseCase.setName(newName);
+//                            redrawCanvas();
+//                        });
+//                    });
+//
+//                    // Delete option
+//                    MenuItem deleteItem = new MenuItem("Delete");
+//                    deleteItem.setOnAction(e -> {
+//                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+//                        alert.setTitle("Delete Use Case");
+//                        alert.setHeaderText("Are you sure you want to delete this use case?");
+//                        alert.setContentText("This action cannot be undone.");
+//
+//                        Optional<ButtonType> confirmation = alert.showAndWait();
+//                        if (confirmation.isPresent() && confirmation.get() == ButtonType.OK) {
+//                            deleteUseCase(clickedUseCase);
+//                            redrawCanvas();
+//                        }
+//                    });
+//
+//                    contextMenu.getItems().addAll(editItem, deleteItem);
+//                    contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
+//
+//                    event.consume(); // Prevent right-click from also being interpreted as double-click
+//                }
+//            }
+//        });
+//
+//        // Handle double-click to edit name
+//        drawingCanvas.setOnMouseClicked(event -> {
+//            if (event.getClickCount() == 2) { // Double-click detection
+//                double clickX = event.getX();
+//                double clickY = event.getY();
+//
+//                final UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
+//
+//                if (clickedUseCase != null) {
+//                    // Show dialog to edit use case name
+//                    TextInputDialog dialog = new TextInputDialog(clickedUseCase.getName());
+//                    dialog.setTitle("Edit Use Case Name");
+//                    dialog.setHeaderText("Edit the name of the selected use case");
+//                    dialog.setContentText("Name:");
+//
+//                    Optional<String> result = dialog.showAndWait();
+//                    result.ifPresent(newName -> {
+//                        clickedUseCase.setName(newName);
+//                        redrawCanvas();
+//                    });
+//                }
+//            }
+//        });
+//    }
 
-                if (clickedUseCase != null) {
-                    // Create the context menu
-                    ContextMenu contextMenu = new ContextMenu();
-
-                    // Edit option
-                    MenuItem editItem = new MenuItem("Edit");
-                    editItem.setOnAction(e -> {
-                        TextInputDialog dialog = new TextInputDialog(clickedUseCase.getName());
-                        dialog.setTitle("Edit Use Case Name");
-                        dialog.setHeaderText("Edit the name of the selected use case");
-                        dialog.setContentText("Name:");
-
-                        Optional<String> result = dialog.showAndWait();
-                        result.ifPresent(newName -> {
-                            clickedUseCase.setName(newName);
-                            redrawCanvas();
-                        });
-                    });
-
-                    // Delete option
-                    MenuItem deleteItem = new MenuItem("Delete");
-                    deleteItem.setOnAction(e -> {
-                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-                        alert.setTitle("Delete Use Case");
-                        alert.setHeaderText("Are you sure you want to delete this use case?");
-                        alert.setContentText("This action cannot be undone.");
-
-                        Optional<ButtonType> confirmation = alert.showAndWait();
-                        if (confirmation.isPresent() && confirmation.get() == ButtonType.OK) {
-                            deleteUseCase(clickedUseCase);
-                            redrawCanvas();
-                        }
-                    });
-
-                    contextMenu.getItems().addAll(editItem, deleteItem);
-                    contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
-
-                    event.consume(); // Prevent right-click from also being interpreted as double-click
-                }
-            }
-        });
-
-        // Handle double-click to edit name
+    private void enableNameEdit() {
         drawingCanvas.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) { // Double-click detection
+            if (event.getClickCount() == 2) { // Detect double-click
                 double clickX = event.getX();
                 double clickY = event.getY();
 
-                final UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
+                // Check if an actor was clicked
+                Actor clickedActor = findClickedActor(clickX, clickY);
+                if (clickedActor != null) {
+                    editActorName(clickedActor);
+                    return; // Exit to avoid checking use cases
+                }
 
+                // Check if a use case was clicked
+                UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
                 if (clickedUseCase != null) {
-                    // Show dialog to edit use case name
-                    TextInputDialog dialog = new TextInputDialog(clickedUseCase.getName());
-                    dialog.setTitle("Edit Use Case Name");
-                    dialog.setHeaderText("Edit the name of the selected use case");
-                    dialog.setContentText("Name:");
+                    editUseCaseName(clickedUseCase);
+                }
+            }
+        });
 
-                    Optional<String> result = dialog.showAndWait();
-                    result.ifPresent(newName -> {
-                        clickedUseCase.setName(newName);
-                        redrawCanvas();
-                    });
+        drawingCanvas.setOnMousePressed(event -> {
+            if (event.isSecondaryButtonDown()) { // Detect right-click for context menu
+                double clickX = event.getX();
+                double clickY = event.getY();
+
+                // Check if an actor was clicked
+                Actor clickedActor = findClickedActor(clickX, clickY);
+                if (clickedActor != null) {
+                    showContextMenu(clickedActor, event.getScreenX(), event.getScreenY(), "actor");
+                    event.consume(); // Prevent further processing of the right-click event
+                    return; // Exit after finding the first clicked actor
+                }
+
+                // Check if a use case was clicked
+                UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
+                if (clickedUseCase != null) {
+                    showContextMenu(clickedUseCase, event.getScreenX(), event.getScreenY(), "useCase");
+                    event.consume(); // Prevent further processing of the right-click event
+                    return; // Exit after finding the first clicked use case
                 }
             }
         });
     }
 
-    private UseCase findClickedUseCase(double clickX, double clickY) {
+    private Actor findClickedActor(double x, double y) {
+        for (Actor actor : actors) {
+            if (x >= actor.getX() && x <= actor.getX() + actor.getWidth() &&
+                    y >= actor.getY() && y <= actor.getY() + actor.getHeight()) {
+                return actor;
+            }
+        }
+        return null;
+    }
+
+    private UseCase findClickedUseCase(double x, double y) {
         for (UseCase useCase : useCases) {
-            if (clickX >= useCase.getX() && clickX <= useCase.getX() + 150 &&
-                    clickY >= useCase.getY() && clickY <= useCase.getY() + 60) {
+            if (x >= useCase.getX() && x <= useCase.getX() + useCase.getWidth() &&
+                    y >= useCase.getY() && y <= useCase.getY() + useCase.getHeight()) {
                 return useCase;
             }
         }
         return null;
     }
+
+    private void showContextMenu(Object element, double screenX, double screenY, String type) {
+        ContextMenu contextMenu = new ContextMenu();
+
+        // Edit option
+        MenuItem editItem = new MenuItem("Edit");
+        editItem.setOnAction(e -> {
+            if ("actor".equals(type)) {
+                editActorName((Actor) element);
+            } else if ("useCase".equals(type)) {
+                editUseCaseName((UseCase) element);
+            }
+        });
+
+        // Delete option
+        MenuItem deleteItem = new MenuItem("Delete");
+        deleteItem.setOnAction(e -> {
+            if ("actor".equals(type)) {
+                actors.remove(element); // Remove actor from list
+            } else if ("useCase".equals(type)) {
+                useCases.remove(element); // Remove use case from list
+            }
+            redrawCanvas(); // Redraw the canvas after removal
+        });
+
+        contextMenu.getItems().addAll(editItem, deleteItem);
+        contextMenu.show(drawingCanvas, screenX, screenY);
+    }
+
+    private void editActorName(Actor actor) {
+        TextInputDialog dialog = new TextInputDialog(actor.getName());
+        dialog.setTitle("Edit Actor Name");
+        dialog.setHeaderText("Edit the name of the selected actor");
+        dialog.setContentText("Name:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(newName -> {
+            // Check for duplicate name, excluding the current actor
+            boolean nameExists = actors.stream()
+                    .anyMatch(existingActor -> existingActor.getName().equalsIgnoreCase(newName) && existingActor != actor);
+
+            if (nameExists) {
+                showErrorMessage("An actor with this name already exists.");
+            } else {
+                actor.setName(newName);
+                redrawCanvas();
+            }
+        });
+    }
+
+
+
+    private void editUseCaseName(UseCase useCase) {
+        TextInputDialog dialog = new TextInputDialog(useCase.getName());
+        dialog.setTitle("Edit Use Case Name");
+        dialog.setHeaderText("Edit the name of the selected use case");
+        dialog.setContentText("Name:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(newName -> {
+            // Check for duplicate name, excluding the current use case
+            boolean nameExists = useCases.stream()
+                    .anyMatch(existingUseCase -> existingUseCase.getName().equalsIgnoreCase(newName) && existingUseCase != useCase);
+
+            if (nameExists) {
+                showErrorMessage("A use case with this name already exists.");
+            } else {
+                useCase.setName(newName);
+                redrawCanvas();
+            }
+        });
+    }
+
+    private void showErrorMessage(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+
+//    private UseCase findClickedUseCase(double clickX, double clickY) {
+//        for (UseCase useCase : useCases) {
+//            if (clickX >= useCase.getX() && clickX <= useCase.getX() + 150 &&
+//                    clickY >= useCase.getY() && clickY <= useCase.getY() + 60) {
+//                return useCase;
+//            }
+//        }
+//        return null;
+//    }
 
     private void deleteUseCase(UseCase useCase) {
         useCases.remove(useCase);
@@ -805,19 +1030,20 @@ public class UseCaseDashboardController {
 
         // Center text in the oval
         gc.setFill(Color.BLACK);
-        double centerX = useCase.getX() + ovalWidth / 2;
-        double totalTextHeight = textHeight * lines.size();
-        double centerY = useCase.getY() + (ovalHeight - totalTextHeight) / 2 + textHeight;
+        double centerX = useCase.getX() + ovalWidth / 2; // Center X of the oval
+        double centerY = useCase.getY() + ovalHeight / 2; // Center Y of the oval
+        double totalTextHeight = textHeight * lines.size(); // Total height of all text lines
+        double startY = centerY - totalTextHeight / 2 + textHeight; // Starting Y-position for text
 
         // Draw each line of text
         for (int i = 0; i < lines.size(); i++) {
             textHelper.setText(lines.get(i));
             double lineWidth = textHelper.getBoundsInLocal().getWidth();
-            double startX = centerX - lineWidth / 2;
-            double startY = centerY + i * textHeight;  // Adjust vertical position for each line
-            gc.fillText(lines.get(i), startX, startY);
+            double startX = centerX - lineWidth / 2; // Center each line horizontally
+            gc.fillText(lines.get(i), startX, startY + i * textHeight); // Adjust vertical position for each line
         }
     }
+
 
     @FXML
     private void handleAddAssociation() {
@@ -1297,30 +1523,6 @@ public class UseCaseDashboardController {
     public void handleExit() {
         System.out.println("Exiting application...");
         // Logic to exit the application
-    }
-
-    // Undo action (Placeholder method)
-    public void handleUndo() {
-        System.out.println("Undoing last action...");
-        // Logic to undo last action
-    }
-
-    // Redo action (Placeholder method)
-    public void handleRedo() {
-        System.out.println("Redoing last action...");
-        // Logic to redo last action
-    }
-
-    // Manage actors (Placeholder method)
-    public void handleManageActors() {
-        System.out.println("Managing actors...");
-        // Logic to manage actors
-    }
-
-    // Manage use cases (Placeholder method)
-    public void handleManageUseCases() {
-        System.out.println("Managing use cases...");
-        // Logic to manage use cases
     }
 
     // Generate code (Placeholder method)
