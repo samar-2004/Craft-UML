@@ -1666,12 +1666,12 @@ public class UseCaseDashboardController {
                 }
 
                 // Enable dragging for loaded elements
-                for (Actor actor : actors) {
-                    enableActorDrag(actor);
-                }
-                for (UseCase useCase : useCases) {
-                    enableUseCaseDrag(useCase);
-                }
+
+                  enableDragging();
+
+
+
+
 
                 // Redraw canvas
                 redrawCanvas();
