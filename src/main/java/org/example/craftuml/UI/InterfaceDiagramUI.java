@@ -11,6 +11,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.example.craftuml.models.ClassDiagrams.AttributeData;
+import org.example.craftuml.models.ClassDiagrams.ClassDiagram;
 import org.example.craftuml.models.ClassDiagrams.InterfaceData;
 import org.example.craftuml.models.ClassDiagrams.MethodData;
 
@@ -21,18 +22,21 @@ public class InterfaceDiagramUI {
 
     private InterfaceData interfaceDiagram;
     private Canvas drawingCanvas;
+    private List<InterfaceData> interfaces;
 
-    public InterfaceDiagramUI(Canvas drawingCanvas)
+    public InterfaceDiagramUI(Canvas drawingCanvas,List<InterfaceData> interfaces)
     {
         if (drawingCanvas == null) {
             throw new IllegalArgumentException("Canvas cannot be null");
         }
         this.drawingCanvas = drawingCanvas;
         this.interfaceDiagram = new InterfaceData();
+        this.interfaces = interfaces;
     }
-    public InterfaceDiagramUI(Canvas drawingCanvas, InterfaceData interfaceDiagram) {
-        this(drawingCanvas);
+    public InterfaceDiagramUI(Canvas drawingCanvas, InterfaceData interfaceDiagram,List<InterfaceData> interfaces) {
+        this.drawingCanvas = drawingCanvas;
         this.interfaceDiagram = interfaceDiagram;
+        this.interfaces = interfaces;
     }
 
     public InterfaceData showInterfaceDiagramDialog() {
@@ -132,6 +136,15 @@ public class InterfaceDiagramUI {
             if (!validateInterfaceName(className, classNameField)) {
                 return;
             }
+
+            for (InterfaceData diagram : interfaces) {
+                if (diagram.getName().equalsIgnoreCase(className)) {
+                    showError("A class diagram with this name already exists.");
+                    return;
+                }
+            }
+
+
             if (!areFieldsFilled(methodsVBox)) {
                 showError("Please ensure all fields are filled for each method.");
                 return;

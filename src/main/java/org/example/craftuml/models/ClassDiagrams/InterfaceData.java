@@ -1,6 +1,8 @@
 package org.example.craftuml.models.ClassDiagrams;
 
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import org.example.craftuml.models.DiagramComponent;
@@ -9,30 +11,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InterfaceData implements DiagramComponent {
-    private String name;
     private List<MethodData> methods;
     private double x, y;
     private double height,width;
     private static final double PADDING = 10;
     private static final Font FONT = Font.font("Arial", 12);
+    private final StringProperty name = new SimpleStringProperty();
 
-    public InterfaceData(String name,List<MethodData> methods) {
-        this.name = name;
-        this.methods = methods;
-    }
     public InterfaceData()
     {
         this.methods = new ArrayList<>();
     }
 
-    @Override
     public String getName() {
-        return name;
+        return name.get();
     }
 
-    @Override
     public void setName(String name) {
-        this.name = name;
+        if (name == null || name.trim().isEmpty() || name.contains(" ")) {
+            throw new IllegalArgumentException("Class name cannot be empty or contain spaces.");
+        }
+        this.name.set(name);
+    }
+
+    public StringProperty nameProperty() {
+        return name;
     }
 
     @Override
