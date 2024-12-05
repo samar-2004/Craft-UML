@@ -1,10 +1,15 @@
 package org.example.craftuml.Service;
 
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 
 import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
@@ -26,6 +31,7 @@ import org.example.craftuml.models.ClassDiagrams.ClassDiagram;
 import org.example.craftuml.models.ClassDiagrams.InterfaceData;
 import org.example.craftuml.models.ClassDiagrams.MethodData;
 import org.example.craftuml.models.Relationship;
+import org.example.craftuml.models.Section;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -38,14 +44,20 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class ClassDashboardController {
     @FXML
     private Canvas drawingCanvas;
+    @FXML
+    private ScrollPane scrollPane;
 
     @FXML
-    private ListView<String> modelInfoList;
+    private ListView<String> modelInfoList = new ListView<>();
+    private ObservableList<String> modelNames = FXCollections.observableArrayList();
+    private ObservableList<Object> modelObjects = FXCollections.observableArrayList();
 
     private ClassDiagram classDiagram, activeDiagram;
     private InterfaceData interfaceDiagram, activeInterface;
@@ -70,12 +82,128 @@ public class ClassDashboardController {
     private ContextMenu contextMenu;
 
 
-
     @FXML
     public void initialize() {
-
         initializeCanvasHandlers();
+
+        modelInfoList.setCellFactory(listView -> new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+
+                // Clear any previous styles
+                setStyle("");
+
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    int index = getIndex();
+                    if (index >= 0 && index < modelObjects.size()) {  // Ensure the index is within bounds
+                        Object modelItem = modelObjects.get(index);
+
+                        // Check if the item is a section title
+                        if (modelItem instanceof Section) {
+                            setText(item);
+                            setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-background-color: #f0f0f0;");
+                        } else {
+                            setText(item);
+
+                            // Apply specific styles to individual items
+                            if (modelItem instanceof ClassDiagram) {
+                                setStyle("-fx-font-weight: bold; -fx-background-color: #e6f7ff;");
+                            } else if (modelItem instanceof InterfaceData) {
+                                setStyle("-fx-font-style: italic; -fx-background-color: #fff5e6;");
+                            } else if (modelItem instanceof Relationship) {
+                                setStyle("-fx-font-size: 14px; -fx-background-color: #B0D0A0;");
+                            }
+                        }
+                    } else {
+                        // Index is out of bounds, handle gracefully
+                        setText(null);
+                        setGraphic(null);
+                    }
+                }
+            }
+
+        });
+            updateListView();
+
+        classDiagrams.forEach(diagram ->
+                diagram.nameProperty().addListener((obs, oldName, newName) -> updateListView()));
+
+        interfaceDiagrams.forEach(diagram ->
+                diagram.nameProperty().addListener((obs, oldName, newName) -> updateListView()));
+
+        addRelationshipListeners(associations);
+        addRelationshipListeners(compositions);
+        addRelationshipListeners(aggregations);
+        addRelationshipListeners(realizations);
+        addRelationshipListeners(generalizations);
+     }
+
+    private void addRelationshipListeners(List<Relationship> relationships) {
+        relationships.forEach(relationship ->
+                relationship.relationNameProperty().addListener((obs, oldName, newName) -> updateListView()));
     }
+    private void updateListView() {
+        modelNames.clear();
+        modelObjects.clear();
+
+        // Create sections for each type of item
+        List<Section> sections = new ArrayList<>();
+
+        // Only create and add "CLASSES" section if there are class diagrams
+        if (!classDiagrams.isEmpty()) {
+            List<Object> classItems = new ArrayList<>(classDiagrams);
+            sections.add(new Section("CLASSES", classItems));
+        }
+
+        // Only create and add "INTERFACES" section if there are interface diagrams
+        if (!interfaceDiagrams.isEmpty()) {
+            List<Object> interfaceItems = new ArrayList<>(interfaceDiagrams);
+            sections.add(new Section("INTERFACES", interfaceItems));
+        }
+
+        // Only create and add "RELATIONSHIPS" section if there are relationships
+        List<Object> relationshipItems = new ArrayList<>();
+        relationshipItems.addAll(associations);
+        relationshipItems.addAll(compositions);
+        relationshipItems.addAll(aggregations);
+        relationshipItems.addAll(realizations);
+        relationshipItems.addAll(generalizations);
+
+        if (!relationshipItems.isEmpty()) {
+            sections.add(new Section("RELATIONSHIPS", relationshipItems));
+        }
+
+        String SPACE = " "; // You can adjust the number of spaces to add more padding
+
+        // Add sections to modelObjects and modelNames if they are non-empty
+        boolean firstSection = true; // Flag to track if it's the first section
+        for (Section section : sections) {
+            // Add space before each section except the first one
+            if (!firstSection) {
+                modelNames.add(SPACE);  // Adding space between sections
+                modelObjects.add(null); // Just to add space in the modelObjects
+            }
+            firstSection = false; // Set the flag to false after the first section
+
+            // Add section title as header
+            modelNames.add(section.getTitle());
+            modelObjects.add(section); // Add section object for reference
+
+            // Add items of the section
+            for (Object item : section.getItems()) {
+                modelNames.add(item instanceof ClassDiagram ? ((ClassDiagram) item).getName()
+                        : item instanceof InterfaceData ? ((InterfaceData) item).getName()
+                        : ((Relationship) item).getRelationType());
+                modelObjects.add(item); // Add item for reference
+            }
+        }
+        modelInfoList.setItems(FXCollections.observableList(modelNames));;
+    }
+
 
     public void redrawCanvas() {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
@@ -104,12 +232,11 @@ public class ClassDashboardController {
         for (Relationship relationship : generalizations) {
             relationship.drawGeneralization(gc);
         }
-
     }
 
     @FXML
     private void handleClassDiagram() {
-        classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas);
+        classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas,classDiagrams);
         classDiagram = classDiagramUI.showClassDiagramDialog();
 
         double newX = 20 + (classDiagrams.size() * 100) % (drawingCanvas.getWidth() - 100);
@@ -118,6 +245,9 @@ public class ClassDashboardController {
         classDiagram.setX(newX);
         classDiagram.setY(newY);
         classDiagrams.add(classDiagram);
+        classDiagram.nameProperty().addListener((obs, oldName, newName) -> updateListView());
+        updateListView();
+
         createClassDiagram(classDiagram);
     }
 
@@ -163,10 +293,15 @@ public class ClassDashboardController {
         }
 
         double maxWidth = 0;
+        String className = classDiagram.getName();
+        Text tempText = new Text(className);
+        tempText.setFont(gc.getFont());
+        double classNameWidth = tempText.getLayoutBounds().getWidth();
+        maxWidth = Math.max(maxWidth, classNameWidth);
 
         for (AttributeData at : classDiagram.getAttributes()) {
             String attributeText = at.getAccessModifier() + " " + at.getName() + " : " + at.getDataType();
-            Text tempText = new Text(attributeText);
+            tempText = new Text(attributeText);
             tempText.setFont(gc.getFont());
             double textWidth = tempText.getLayoutBounds().getWidth();
             maxWidth = Math.max(maxWidth, textWidth);
@@ -174,12 +309,11 @@ public class ClassDashboardController {
 
         for (MethodData md : classDiagram.getMethods()) {
             String methodText = md.getAccessModifier() + " " + md.getName() + " : " + md.getReturnType();
-            Text tempText = new Text(methodText);
+            tempText = new Text(methodText);
             tempText.setFont(gc.getFont());
             double textWidth = tempText.getLayoutBounds().getWidth();
             maxWidth = Math.max(maxWidth, textWidth);
         }
-
         double width = maxWidth + 40;
 
         classDiagram.setWidth(width);
@@ -203,13 +337,13 @@ public class ClassDashboardController {
         gc.strokeLine(x, y + classNameHeight + attributeHeight, x + width, y + classNameHeight + attributeHeight);
 
         gc.setFill(Color.BLACK);
-        String className = classDiagram.getName();
+        String classNameText = classDiagram.getName();
 
-        Text tempText = new Text(className);
+        tempText = new Text(classNameText);
         tempText.setFont(gc.getFont());
-        double classNameWidth = tempText.getLayoutBounds().getWidth();
+        double classNameTextWidth = tempText.getLayoutBounds().getWidth();
 
-        gc.fillText(className, x + (width - classNameWidth) / 2, y + classNameHeight / 2 + 10);
+        gc.fillText(className, x + (width - classNameTextWidth) / 2, y + classNameHeight / 2 + 10);
 
         double attrY = y + classNameHeight + 15;
         for (AttributeData at : classDiagram.getAttributes()) {
@@ -262,24 +396,70 @@ public class ClassDashboardController {
                     relationship.getSourceClass().equals(classDiagram) ||
                             relationship.getTargetClass().equals(classDiagram)
             );
+
             realizations.removeIf(relationship ->
                     relationship.getSourceClass().equals(classDiagram) ||
                             (relationship.getTargetInterface() != null &&
                                     relationship.getTargetInterface().equals(classDiagram))
             );
+
             generalizations.removeIf(relationship ->
                     relationship.getSourceClass().equals(classDiagram) ||
                             relationship.getTargetClass().equals(classDiagram)
             );
+
             classDiagrams.remove(classDiagram);
+
+            deleteClassDiagramFromListView(classDiagram);
+
             activeDiagram = null;
             redrawCanvas();
         }
     }
 
+    private void deleteClassDiagramFromListView(ClassDiagram classDiagram) {
+        List<String> updatedModelNames = new ArrayList<>();
+        List<Object> updatedModelObjects = new ArrayList<>();
+
+        for (int i = 0; i < modelNames.size(); i++) {
+            Object modelItem = modelObjects.get(i);
+
+            if (modelItem instanceof Section) {
+                updatedModelNames.add(modelNames.get(i));
+                updatedModelObjects.add(modelObjects.get(i));
+            }
+            else if (modelItem instanceof ClassDiagram && modelItem.equals(classDiagram)) {
+                continue;
+            }
+            else if (modelItem instanceof Relationship) {
+                Relationship relationship = (Relationship) modelItem;
+                boolean isRelated = relationship.getSourceClass().equals(classDiagram) ||
+                        relationship.getTargetClass().equals(classDiagram) ||
+                        (relationship.getTargetInterface() != null &&
+                                relationship.getTargetInterface().equals(classDiagram));
+
+                if (isRelated) {
+                    continue; // Skip this relationship
+                }
+            }
+
+            // Otherwise, keep the item in the new lists
+            updatedModelNames.add(modelNames.get(i));
+            updatedModelObjects.add(modelObjects.get(i));
+        }
+
+        // Now, update the model names and objects
+        modelNames.setAll(updatedModelNames);
+        modelObjects.setAll(updatedModelObjects);
+
+        // Update the ListView to reflect the changes
+        modelInfoList.setItems(modelNames);
+        updateListView();  // This ensures the ListView is re-rendered with the correct data
+    }
+
 
     private void editClassDiagram(ClassDiagram classDiagram) {
-        classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas, classDiagram);
+        classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas, classDiagram,classDiagrams);
         ClassDiagram updatedDiagram = classDiagramUI.showClassDiagramDialog();
 
         if (updatedDiagram != null) {
@@ -292,13 +472,10 @@ public class ClassDashboardController {
     }
 
     private boolean isWithinBounds(double mouseX, double mouseY, ClassDiagram diagram, GraphicsContext gc) {
-        // Get the position and size of the diagram
         double x = diagram.getX();
         double y = diagram.getY();
         double width = calculateDiagramWidth(diagram, gc);
         double height = calculateDiagramHeight(diagram);
-
-        // Check if mouse is within the diagram's bounds
         boolean isWithin = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
 
         return isWithin;
@@ -306,32 +483,39 @@ public class ClassDashboardController {
 
     private double calculateDiagramWidth(ClassDiagram diagram, GraphicsContext gc) {
         double maxWidth = 0;
+
         Text tempText = new Text(diagram.getName());
         tempText.setFont(gc.getFont());
         maxWidth = Math.max(maxWidth, tempText.getLayoutBounds().getWidth());
 
-        for (AttributeData attribute : diagram.getAttributes()) {
-            String attributeText = attribute.getAccessModifier() + " " + attribute.getName() + " : " + attribute.getDataType();
-            tempText = new Text(attributeText);
-            tempText.setFont(gc.getFont());
-            maxWidth = Math.max(maxWidth, tempText.getLayoutBounds().getWidth());
+        if (!diagram.getAttributes().isEmpty()) {
+            for (AttributeData attribute : diagram.getAttributes()) {
+                String attributeText = attribute.getAccessModifier() + " " + attribute.getName() + " : " + attribute.getDataType();
+                tempText = new Text(attributeText);
+                tempText.setFont(gc.getFont());
+                maxWidth = Math.max(maxWidth, tempText.getLayoutBounds().getWidth());
+            }
         }
-        for (MethodData method : diagram.getMethods()) {
-            String methodText = method.getAccessModifier() + " " + method.getName() + " : " + method.getReturnType();
-            tempText = new Text(methodText);
-            tempText.setFont(gc.getFont());
-            maxWidth = Math.max(maxWidth, tempText.getLayoutBounds().getWidth());
+
+        if (!diagram.getMethods().isEmpty()) {
+            for (MethodData method : diagram.getMethods()) {
+                String methodText = method.getAccessModifier() + " " + method.getName() + " : " + method.getReturnType();
+                tempText = new Text(methodText);
+                tempText.setFont(gc.getFont());
+                maxWidth = Math.max(maxWidth, tempText.getLayoutBounds().getWidth());
+            }
         }
+
         return maxWidth + 40;
     }
 
     private double calculateDiagramHeight(ClassDiagram diagram) {
-        double classNameHeight = 30;  // Fixed height for class name
+        double classNameHeight = 30;
         double attributeHeight = 0;
-        for (AttributeData attribute : diagram.getAttributes()) {
-            // You can estimate or calculate the height based on the text size
+        for (AttributeData attribute : diagram.getAttributes())
+        {
             Text tempText = new Text(attribute.getAccessModifier() + " " + attribute.getName() + " : " + attribute.getDataType());
-            tempText.setFont(new Font("Arial", 12)); // Use the actual font being used
+            tempText.setFont(new Font("Arial", 12));
             attributeHeight += tempText.getLayoutBounds().getHeight();
         }
 
@@ -477,6 +661,7 @@ public class ClassDashboardController {
                 activeDiagram.setX(newX);
                 activeDiagram.setY(newY);
 
+                resizeCanvasIfNeeded(newX, newY);
                 redrawCanvas();
             } else if (activeInterface != null) {
                 double newX = event.getX() - dragStartX;
@@ -485,6 +670,7 @@ public class ClassDashboardController {
                 activeInterface.setX(newX);
                 activeInterface.setY(newY);
 
+                resizeCanvasIfNeeded(newX, newY);
                 redrawCanvas();
             }
         });
@@ -579,6 +765,18 @@ public class ClassDashboardController {
         });
 
     }
+    private void resizeCanvasIfNeeded(double x, double y) {
+        double currentWidth = drawingCanvas.getWidth();
+        double currentHeight = drawingCanvas.getHeight();
+        double padding = 100; // Padding to prevent too frequent resizing
+
+        if (x + padding > currentWidth) {
+            drawingCanvas.setWidth(x + padding);
+        }
+        if (y + padding > currentHeight) {
+            drawingCanvas.setHeight(y + padding);
+        }
+    }
     private void closeContextMenu() {
         if (contextMenu != null && contextMenu.isShowing()) {
             contextMenu.hide();
@@ -591,8 +789,10 @@ public class ClassDashboardController {
             String sourceName = activeRelationship.getSourceClass().getName();
             String targetName = activeRelationship.getTargetClass().getName();
             String relationshipName = activeRelationship.getRelationName();
+            String sourceMultiplicity = activeRelationship.getSourceClassMultiplicity();
+            String targetMultiplicity = activeRelationship.getTargetClassMultiplicity();
 
-            String[] namesAndRelationshipName = promptForSourceAndTargetClassesWithDefaults(sourceName, targetName, relationshipName);
+            String[] namesAndRelationshipName = promptForSourceAndTargetClassesWithDefaults(sourceName, targetName,sourceMultiplicity,targetMultiplicity, relationshipName);
 
             if (namesAndRelationshipName == null) return;
 
@@ -758,25 +958,67 @@ public class ClassDashboardController {
     }
 
     private void deleteRelationship(Relationship activeRelationship) {
+        System.out.println("Deleting Relationship: " + activeRelationship.getType());
 
-            if (activeRelationship.getType().equals("association")) {
-                associations.remove(activeRelationship);
-            } else if (activeRelationship.getType().equals("composition")) {
-                compositions.remove(activeRelationship);
-            } else if (activeRelationship.getType().equals("aggregation")) {
-                aggregations.remove(activeRelationship);
-            } else if (activeRelationship.getType().equals("realization")) {
-                realizations.remove(activeRelationship);
-            } else if (activeRelationship.getType().equals("Generalization")) {
-                generalizations.remove(activeRelationship);
-            }
-            activeRelationship = null;
-            redrawCanvas();
+        if (activeRelationship.getType().equals("association")) {
+            associations.remove(activeRelationship);
+            System.out.println("Removed from Associations: " + activeRelationship.getType());
+        } else if (activeRelationship.getType().equals("composition")) {
+            compositions.remove(activeRelationship);
+            System.out.println("Removed from Compositions: " + activeRelationship.getType());
+        } else if (activeRelationship.getType().equals("aggregation")) {
+            aggregations.remove(activeRelationship);
+            System.out.println("Removed from Aggregations: " + activeRelationship.getType());
+        } else if (activeRelationship.getType().equals("Realization")) {
+            realizations.remove(activeRelationship);
+            System.out.println("Removed from Realizations: " + activeRelationship.getType());
+        } else if (activeRelationship.getType().equals("Generalization")) {
+            generalizations.remove(activeRelationship);
+            System.out.println("Removed from Generalizations: " + activeRelationship.getType());
+        }
+        deleteSpecificRelationshipFromListView(activeRelationship);
+        activeRelationship = null;
+
+        System.out.println("Active Relationship reset to null.");
+        modelInfoList.refresh();
+
+        redrawCanvas();
     }
+
+    private void deleteSpecificRelationshipFromListView(Relationship activeRelationship) {
+        List<String> updatedModelNames = new ArrayList<>();
+        List<Object> updatedModelObjects = new ArrayList<>();
+        for (int i = 0; i < modelNames.size(); i++)
+        {
+            Object modelItem = modelObjects.get(i);
+
+            if (modelItem instanceof Section) {
+                updatedModelNames.add(modelNames.get(i));
+                updatedModelObjects.add(modelObjects.get(i));
+            }
+            else if (modelItem instanceof Relationship && modelItem.equals(activeRelationship))
+            {
+                continue;
+            }
+            else {
+                updatedModelNames.add(modelNames.get(i));
+                updatedModelObjects.add(modelObjects.get(i));
+            }
+        }
+
+
+        modelNames.setAll(updatedModelNames);
+        modelObjects.setAll(updatedModelObjects);
+
+        modelInfoList.setItems(modelNames);
+
+        updateListView();
+    }
+
 
     @FXML
     private void handleAddInterface() {
-        InterfaceDiagramUI interfaceDiagramUI = new InterfaceDiagramUI(drawingCanvas);
+        InterfaceDiagramUI interfaceDiagramUI = new InterfaceDiagramUI(drawingCanvas,interfaceDiagrams);
         interfaceDiagram = interfaceDiagramUI.showInterfaceDiagramDialog();
 
         double newX = 20 + (interfaceDiagrams.size() * 100) % (drawingCanvas.getWidth() - 100);
@@ -786,9 +1028,11 @@ public class ClassDashboardController {
         interfaceDiagram.setY(newY);
 
         interfaceDiagrams.add(interfaceDiagram);
+        interfaceDiagram.nameProperty().addListener((obs, oldName, newName) -> updateListView());
+        updateListView();
+
         createInterfaceDiagram(interfaceDiagram);
     }
-
 
     public void createInterfaceDiagram(InterfaceData interfaceDiagram) {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
@@ -862,14 +1106,64 @@ public class ClassDashboardController {
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
+            // Remove realization relationships involving the interface
+            realizations.removeIf(relationship ->
+                    relationship.getTargetInterface() != null &&
+                            relationship.getTargetInterface().equals(interfaceDiagram)
+            );
+
             interfaceDiagrams.remove(interfaceDiagram);
+
+            deleteInterfaceDiagramFromListView(interfaceDiagram);
+
             activeDiagram = null;
             redrawCanvas();
         }
     }
+    private void deleteInterfaceDiagramFromListView(InterfaceData interfaceDiagram) {
+        List<String> updatedModelNames = new ArrayList<>();
+        List<Object> updatedModelObjects = new ArrayList<>();
+
+        for (int i = 0; i < modelNames.size(); i++) {
+            Object modelItem = modelObjects.get(i);
+
+            if (modelItem instanceof Section) {
+                // Keep sections unchanged
+                updatedModelNames.add(modelNames.get(i));
+                updatedModelObjects.add(modelObjects.get(i));
+            }
+            else if (modelItem instanceof InterfaceData && modelItem.equals(interfaceDiagram)) {
+                continue;
+            }
+            else if (modelItem instanceof Relationship) {
+                Relationship relationship = (Relationship) modelItem;
+                boolean isRelated =
+                        relationship.getTargetInterface() != null &&
+                                relationship.getTargetInterface().equals(interfaceDiagram);
+
+                if (isRelated) {
+                    continue;
+                }
+            }
+
+            // Otherwise, keep the item in the new lists
+            updatedModelNames.add(modelNames.get(i));
+            updatedModelObjects.add(modelObjects.get(i));
+        }
+
+        // Update the model names and objects
+        modelNames.setAll(updatedModelNames);
+        modelObjects.setAll(updatedModelObjects);
+
+        // Update the ListView to reflect the changes
+        modelInfoList.setItems(modelNames);
+        updateListView();  // Refresh the ListView
+    }
+
+
 
     private void editInterfaceDiagram(InterfaceData interfaceDiagram) {
-        InterfaceDiagramUI interfaceDiagramUI = new InterfaceDiagramUI(drawingCanvas, interfaceDiagram);
+        InterfaceDiagramUI interfaceDiagramUI = new InterfaceDiagramUI(drawingCanvas, interfaceDiagram,interfaceDiagrams);
         InterfaceData updatedDiagram = interfaceDiagramUI.showInterfaceDiagramDialog();
 
         if (updatedDiagram != null) {
@@ -905,103 +1199,188 @@ public class ClassDashboardController {
 
 
     private String[] promptForSourceAndTargetClasses() {
-
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Add Relationship");
-        dialog.setHeaderText("Select the source and target class diagrams and enter a relationship name.");
+        dialog.setHeaderText("Select the source and target class diagrams, enter a relationship name (optional), and specify multiplicities.");
 
         ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 
+        // ComboBoxes for source and target classes
         ComboBox<String> sourceBox = new ComboBox<>();
         ComboBox<String> targetBox = new ComboBox<>();
 
-        TextField relationshipNameField = new TextField();
-        relationshipNameField.setPromptText("Enter Name (optional)");
+        // ComboBoxes for multiplicities
+        ComboBox<String> sourceMultiplicityBox = new ComboBox<>();
+        ComboBox<String> targetMultiplicityBox = new ComboBox<>();
 
+        // Populate class diagram ComboBoxes
         for (ClassDiagram diagram : classDiagrams) {
             sourceBox.getItems().add(diagram.getName());
             targetBox.getItems().add(diagram.getName());
         }
 
+        String[] multiplicities = {"No multiplicity", "1", "0..1", "0..*", "1..*"};
+        sourceMultiplicityBox.getItems().addAll(multiplicities);
+        targetMultiplicityBox.getItems().addAll(multiplicities);
+
         sourceBox.setPromptText("Select Source");
         targetBox.setPromptText("Select Target");
+        sourceMultiplicityBox.setPromptText("Source Multiplicity");
+        targetMultiplicityBox.setPromptText("Target Multiplicity");
 
+        TextField relationshipNameField = new TextField();
+        relationshipNameField.setPromptText("Enter Name (optional)");
+
+        Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
+        okButton.setDisable(true);
+
+        ChangeListener<Object> enableOkButtonListener = (obs, oldVal, newVal) -> {
+            okButton.setDisable(
+                    sourceBox.getValue() == null ||
+                            targetBox.getValue() == null ||
+                            sourceMultiplicityBox.getValue() == null ||
+                            targetMultiplicityBox.getValue() == null
+            );
+        };
+
+        sourceBox.valueProperty().addListener(enableOkButtonListener);
+        targetBox.valueProperty().addListener(enableOkButtonListener);
+        sourceMultiplicityBox.valueProperty().addListener(enableOkButtonListener);
+        targetMultiplicityBox.valueProperty().addListener(enableOkButtonListener);
+
+        // Layout using GridPane
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
         grid.add(new Label("Source:"), 0, 0);
         grid.add(sourceBox, 1, 0);
-        grid.add(new Label("Target:"), 0, 1);
-        grid.add(targetBox, 1, 1);
-        grid.add(new Label("Relationship Name:"), 0, 2);
-        grid.add(relationshipNameField, 1, 2);
+        grid.add(new Label("Source Multiplicity:"), 0, 1);
+        grid.add(sourceMultiplicityBox, 1, 1);
+        grid.add(new Label("Target:"), 0, 2);
+        grid.add(targetBox, 1, 2);
+        grid.add(new Label("Target Multiplicity:"), 0, 3);
+        grid.add(targetMultiplicityBox, 1, 3);
+        grid.add(new Label("Relationship Name:"), 0, 4);
+        grid.add(relationshipNameField, 1, 4);
 
         dialog.getDialogPane().setContent(grid);
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == okButtonType) {
-                if (sourceBox.getValue() != null && targetBox.getValue() != null) {
-                    // Return an array with source class, target class, and relationship name
+                if (sourceBox.getValue() != null && targetBox.getValue() != null &&
+                        sourceMultiplicityBox.getValue() != null && targetMultiplicityBox.getValue() != null) {
                     String relationshipName = relationshipNameField.getText().trim();
-                    return new String[] { sourceBox.getValue(), targetBox.getValue(), relationshipName };
+                    return new String[]{
+                            sourceBox.getValue(),
+                            targetBox.getValue(),
+                            sourceMultiplicityBox.getValue().equals("No multiplicity") ? "0" : sourceMultiplicityBox.getValue(),
+                            targetMultiplicityBox.getValue().equals("No multiplicity") ? "0" : targetMultiplicityBox.getValue(),
+                            relationshipName
+                    };
                 }
             }
             return null;
         });
 
         Optional<String[]> result = dialog.showAndWait();
-        return result.orElse(null); // Return null if no result is found
+        return result.orElse(null);
     }
 
-    private String[] promptForSourceAndTargetClassesWithDefaults(String defaultSource, String defaultTarget, String defaultRelationshipName) {
 
+    private String[] promptForSourceAndTargetClassesWithDefaults(
+            String defaultSource,
+            String defaultTarget,
+            String defaultSourceMultiplicity,
+            String defaultTargetMultiplicity,
+            String defaultRelationshipName
+    )
+    {
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Add/Edit Relationship");
-        dialog.setHeaderText("Select the source and target class diagrams and enter a relationship name.");
+        dialog.setHeaderText("Select the source and target class diagrams, specify multiplicities, and enter a relationship name.");
 
         ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 
+        // ComboBoxes for source and target classes
         ComboBox<String> sourceBox = new ComboBox<>();
         ComboBox<String> targetBox = new ComboBox<>();
 
-        TextField relationshipNameField = new TextField();
-        relationshipNameField.setPromptText("Enter Name (optional)");
+        // ComboBoxes for multiplicities
+        ComboBox<String> sourceMultiplicityBox = new ComboBox<>();
+        ComboBox<String> targetMultiplicityBox = new ComboBox<>();
 
-        // Add the class diagram names to the combo boxes
+        // Populate class diagram ComboBoxes
         for (ClassDiagram diagram : classDiagrams) {
             sourceBox.getItems().add(diagram.getName());
             targetBox.getItems().add(diagram.getName());
         }
 
-        // Set the default values if they are provided
+        // Populate multiplicity ComboBoxes, including "No multiplicity"
+        String[] multiplicities = {"No multiplicity", "1", "0..1", "0..*", "1..*"};
+        sourceMultiplicityBox.getItems().addAll(multiplicities);
+        targetMultiplicityBox.getItems().addAll(multiplicities);
+
+        // Set default values for ComboBoxes
         sourceBox.setValue(defaultSource);
         targetBox.setValue(defaultTarget);
+        sourceMultiplicityBox.setValue(defaultSourceMultiplicity == "0" ? "No multiplicity" : defaultSourceMultiplicity);
+        targetMultiplicityBox.setValue(defaultTargetMultiplicity == "0" ? "No multiplicity" : defaultTargetMultiplicity);
+
+        // TextField for relationship name
+        TextField relationshipNameField = new TextField();
+        relationshipNameField.setPromptText("Enter Name (optional)");
         relationshipNameField.setText(defaultRelationshipName);
 
-        sourceBox.setPromptText("Select Source");
-        targetBox.setPromptText("Select Target");
+        // Disable OK button initially
+        Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
+        okButton.setDisable(true);
 
+        // Change listener to enable the OK button only when all mandatory fields are filled
+        ChangeListener<Object> enableOkButtonListener = (obs, oldVal, newVal) -> {
+            okButton.setDisable(
+                    sourceBox.getValue() == null ||
+                            targetBox.getValue() == null ||
+                            sourceMultiplicityBox.getValue() == null ||
+                            targetMultiplicityBox.getValue() == null
+            );
+        };
+
+        sourceBox.valueProperty().addListener(enableOkButtonListener);
+        targetBox.valueProperty().addListener(enableOkButtonListener);
+        sourceMultiplicityBox.valueProperty().addListener(enableOkButtonListener);
+        targetMultiplicityBox.valueProperty().addListener(enableOkButtonListener);
+
+        // Layout using GridPane
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
         grid.add(new Label("Source:"), 0, 0);
         grid.add(sourceBox, 1, 0);
-        grid.add(new Label("Target:"), 0, 1);
-        grid.add(targetBox, 1, 1);
-        grid.add(new Label("Relationship Name:"), 0, 2);
-        grid.add(relationshipNameField, 1, 2);
+        grid.add(new Label("Source Multiplicity:"), 0, 1);
+        grid.add(sourceMultiplicityBox, 1, 1);
+        grid.add(new Label("Target:"), 0, 2);
+        grid.add(targetBox, 1, 2);
+        grid.add(new Label("Target Multiplicity:"), 0, 3);
+        grid.add(targetMultiplicityBox, 1, 3);
+        grid.add(new Label("Relationship Name:"), 0, 4);
+        grid.add(relationshipNameField, 1, 4);
 
         dialog.getDialogPane().setContent(grid);
 
-        // Handle the result when the user clicks OK
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == okButtonType) {
-                if (sourceBox.getValue() != null && targetBox.getValue() != null) {
-                    // Return an array with the source class, target class, and relationship name
+                if (sourceBox.getValue() != null && targetBox.getValue() != null &&
+                        sourceMultiplicityBox.getValue() != null && targetMultiplicityBox.getValue() != null) {
                     String relationshipName = relationshipNameField.getText().trim();
-                    return new String[] { sourceBox.getValue(), targetBox.getValue(), relationshipName };
+                    return new String[]{
+                            sourceBox.getValue(),
+                            targetBox.getValue(),
+                            sourceMultiplicityBox.getValue().equals("No multiplicity") ? "0" : sourceMultiplicityBox.getValue(),
+                            targetMultiplicityBox.getValue().equals("No multiplicity") ? "0" : targetMultiplicityBox.getValue(),
+                            relationshipName
+                    };
                 }
             }
             return null;
@@ -1010,6 +1389,7 @@ public class ClassDashboardController {
         Optional<String[]> result = dialog.showAndWait();
         return result.orElse(null); // Return null if no result is found
     }
+
 
     private ClassDiagram findDiagramByName(String name) {
         for (ClassDiagram diagram : classDiagrams) {
@@ -1020,102 +1400,64 @@ public class ClassDashboardController {
         throw new IllegalArgumentException("No class diagram found with name: " + name);
     }
 
-
     @FXML
     private void handleAddAssociation() {
-
-        String[] namesAndRelationshipName = promptForSourceAndTargetClasses();
-        if (namesAndRelationshipName == null) return;
-
-        String sourceName = namesAndRelationshipName[0];
-        String targetName = namesAndRelationshipName[1];
-        String relationshipName = namesAndRelationshipName[2];
-
-        try {
-            ClassDiagram source = findDiagramByName(sourceName);
-            ClassDiagram target = findDiagramByName(targetName);
-
-            if (activeRelationship == null)
-            {
-                Relationship association = new Relationship(source, target, "association", "1", "1", obstacles, relationshipName);
-                associations.add(association);
-            }
-            else
-            {
-                activeRelationship.setSourceClass(source);
-                activeRelationship.setTargetClass(target);
-                activeRelationship.setRelationName(relationshipName);
-                activeRelationship.setType("association");
-                activeRelationship.setSourceMultiplicity("1");
-                activeRelationship.setTargetMultiplicity("1");
-            }
-
-            redrawCanvas();
-
-        } catch (IllegalArgumentException e) {
-            showErrorAlert(e.getMessage());
-        }
+        addRelationship("association");
     }
 
     @FXML
     private void handleAddComposition() {
-        String[] namesAndRelationshipName = promptForSourceAndTargetClasses();
-        if (namesAndRelationshipName == null) return;
-
-        String sourceName = namesAndRelationshipName[0];  // Source class name
-        String targetName = namesAndRelationshipName[1];  // Target class name
-        String relationshipName = namesAndRelationshipName[2];  // Relationship name (optional)
-
-        try {
-            ClassDiagram source = findDiagramByName(sourceName);
-            ClassDiagram target = findDiagramByName(targetName);
-
-            if (activeRelationship == null) {
-                // If no active relationship, create a new one
-                Relationship composition = new Relationship(source, target, "composition", "0", "0", obstacles, relationshipName);
-                compositions.add(composition);
-            } else
-            {
-                activeRelationship.setSourceClass(source);
-                activeRelationship.setTargetClass(target);
-                activeRelationship.setRelationName(relationshipName);
-                activeRelationship.setType("composition");
-                activeRelationship.setSourceMultiplicity("0");
-                activeRelationship.setTargetMultiplicity("0");
-            }
-
-            redrawCanvas();
-
-        } catch (IllegalArgumentException e) {
-            showErrorAlert(e.getMessage());
-        }
+        addRelationship("composition");
     }
 
     @FXML
     private void handleAddAggregation() {
-        String[] namesAndRelationshipName = promptForSourceAndTargetClasses();
-        if (namesAndRelationshipName == null) return;
+        addRelationship("aggregation");
+    }
 
-        String sourceName = namesAndRelationshipName[0];  // Source class name
-        String targetName = namesAndRelationshipName[1];  // Target class name
-        String relationshipName = namesAndRelationshipName[2];  // Relationship name (optional)
+    @FXML
+    public void handleAddGeneralization() {
+        addRelationship("Generalization");
+    }
+
+    private void addRelationship(String relationshipType) {
+        String[] details = promptForSourceAndTargetClasses();
+        if (details == null) return;
+
+        String sourceName = details[0];
+        String targetName = details[1];
+        String sourceMultiplicity = details[2];
+        String targetMultiplicity = details[3];
+        String relationshipName = details[4];
 
         try {
             ClassDiagram source = findDiagramByName(sourceName);
             ClassDiagram target = findDiagramByName(targetName);
 
+            if (source == null || target == null) {
+                showErrorAlert("Source or Target diagram not found.");
+                return;
+            }
+
             if (activeRelationship == null) {
-                // If no active relationship, create a new one
-                Relationship aggregation = new Relationship(source, target, "aggregation", "0", "0", obstacles, relationshipName);
-                aggregations.add(aggregation);
+                Relationship relationship = new Relationship(
+                        source,
+                        target,
+                        relationshipType,
+                        sourceMultiplicity,
+                        targetMultiplicity,
+                        obstacles,
+                        relationshipName
+                );
+
+                addRelationshipToList(relationship);
             } else {
-                // If active relationship exists, edit it
                 activeRelationship.setSourceClass(source);
                 activeRelationship.setTargetClass(target);
                 activeRelationship.setRelationName(relationshipName);
-                activeRelationship.setType("aggregation");
-                activeRelationship.setSourceMultiplicity("0");
-                activeRelationship.setTargetMultiplicity("0");
+                activeRelationship.setType(relationshipType);
+                activeRelationship.setSourceMultiplicity(sourceMultiplicity);
+                activeRelationship.setTargetMultiplicity(targetMultiplicity);
             }
 
             redrawCanvas();
@@ -1124,40 +1466,28 @@ public class ClassDashboardController {
             showErrorAlert(e.getMessage());
         }
     }
-
-    @FXML
-    public void handleAddGeneralization() {
-        // Prompt the user to select source, target, and the relationship name
-        String[] namesAndRelationshipName = promptForSourceAndTargetClasses();
-        if (namesAndRelationshipName == null) return;
-
-        String sourceName = namesAndRelationshipName[0];  // Source class name
-        String targetName = namesAndRelationshipName[1];  // Target class name
-        String relationshipName = namesAndRelationshipName[2];  // Relationship name (optional)
-
-        try {
-            ClassDiagram source = findDiagramByName(sourceName);
-            ClassDiagram target = findDiagramByName(targetName);
-
-            if (activeRelationship == null) {
-                // If no active relationship, create a new one
-                Relationship generalization = new Relationship(source, target, "Generalization", "0", "0", obstacles, relationshipName);
-                generalizations.add(generalization);
-            } else {
-                // If active relationship exists, edit it
-                activeRelationship.setSourceClass(source);
-                activeRelationship.setTargetClass(target);
-                activeRelationship.setRelationName(relationshipName);
-                activeRelationship.setType("Generalization");
-                activeRelationship.setSourceMultiplicity("0");
-                activeRelationship.setTargetMultiplicity("0");
-            }
-
-            redrawCanvas();
-
-        } catch (IllegalArgumentException e) {
-            showErrorAlert(e.getMessage());
+    private void addRelationshipToList(Relationship relationship) {
+        switch (relationship.getType().toLowerCase()) {
+            case "association":
+                associations.add(relationship);
+                break;
+            case "composition":
+                compositions.add(relationship);
+                break;
+            case "aggregation":
+                aggregations.add(relationship);
+                break;
+            case "realization":
+                realizations.add(relationship);
+                break;
+            case "generalization":
+                generalizations.add(relationship);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid relationship type.");
         }
+        relationship.relationNameProperty().addListener((obs, oldName, newName) -> updateListView());
+        updateListView();
     }
 
 
@@ -1170,9 +1500,11 @@ public class ClassDashboardController {
             ClassDiagram source = findDiagramByName(names.getKey());
             InterfaceData target = findInterfaceDiagramByName(names.getValue());
 
-            // Create a new Realization relationship and add it to the list
             Relationship realization = new Relationship(source, target, "Realization", "0", "0", obstacles);
             realizations.add(realization);
+
+            realization.relationNameProperty().addListener((obs, oldName, newName) -> updateListView());
+            updateListView();
 
             redrawCanvas();
 
@@ -1242,12 +1574,6 @@ public class ClassDashboardController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-
-    @FXML
-    private void handleSetMultiplicity() {
-        System.out.println("Set Multiplicity button clicked");
     }
 
     @FXML
@@ -1626,12 +1952,12 @@ public class ClassDashboardController {
 
         String content = "Craft UML is a tool designed to help users create UML diagrams with ease. " +
                 "The application supports various types of diagrams including class diagrams, " +
-                "sequence diagrams, and use-case diagrams. Additionally, it allows users to generate " +
+                " and use-case diagrams. Additionally, it allows users to generate " +
                 "code based on the designed diagrams, streamlining the software development process.\n\n" +
                 "Creators:\n" +
-                "Samar\n" +
-                "Noman\n" +
-                "Hassaan\n\n" +
+                "SAMAR\n" +
+                "NOMAN\n" +
+                "HASSAAN\n\n" +
                 "Version: 1.0.0\n" +
                 "For more information, visit: www.craftuml.com";
 

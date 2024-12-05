@@ -1,5 +1,7 @@
 package org.example.craftuml.models;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -15,13 +17,14 @@ public class Relationship {
     private ClassDiagram sourceClass;
     private ClassDiagram targetClass;
     private InterfaceData targetInterface;
-    private String type; // "association", "composition", "aggregation","Realization"
+    public String type; // "association", "composition", "aggregation","Realization"
     private String sourceClassMultiplicity;
     private String targetClassMultiplicity;
     private String relationName;
     private static final double OFFSET = 50.0;
     private List<Rectangle> obstacles = new ArrayList<>();
     double startX,startY,endX,endY;
+    private final StringProperty relationNameProperty = new SimpleStringProperty();
 
     public Relationship(ClassDiagram sourceClass, ClassDiagram targetClass, String type, String sourceClassMultiplicity, String targetClassMultiplicity,List<Rectangle> obstacles,String relationName) {
         this.sourceClass = sourceClass;
@@ -31,6 +34,7 @@ public class Relationship {
         this.targetClassMultiplicity = targetClassMultiplicity;
         this.obstacles=obstacles;
         this.relationName = relationName;
+        this.relationNameProperty.set(type);
     }
     public Relationship(ClassDiagram sourceClass, InterfaceData targetInterface, String type, String sourceClassMultiplicity, String targetClassMultiplicity, List<Rectangle> obstacles) {
         this.sourceClass = sourceClass;
@@ -39,8 +43,19 @@ public class Relationship {
         this.sourceClassMultiplicity = sourceClassMultiplicity;
         this.targetClassMultiplicity = targetClassMultiplicity;
         this.obstacles=obstacles;
+        this.relationNameProperty.set(type);
     }
 
+    public String getRelationType() {
+        return relationNameProperty.get();
+    }
+
+    public void setRelationType(String relationName) {
+        this.relationNameProperty.set(relationName);
+    }
+    public StringProperty relationNameProperty() {
+        return relationNameProperty;
+    }
     public void draw(GraphicsContext gc)
     {
         double x1 = sourceClass.getX();
@@ -236,11 +251,9 @@ public class Relationship {
 
         gc.setLineWidth(2);
 
-        // Calculate the arrowhead offset to stop the dashed line just before it
-        double arrowLength = 15.0;  // Length of the arrowhead
-        double angle = Math.atan2(adjY2 - adjY1, adjX2 - adjX1);  // Angle of the line
+        double arrowLength = 15.0;
+        double angle = Math.atan2(adjY2 - adjY1, adjX2 - adjX1);
 
-        // Calculate the point where the line should stop (just before the arrowhead starts)
         double stopX = adjX2 - arrowLength * Math.cos(angle);
         double stopY = adjY2 - arrowLength * Math.sin(angle);
 
