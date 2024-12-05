@@ -521,7 +521,6 @@ public class Relationship {
     public void drawAggregation(GraphicsContext gc) {
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
-        // Draw diamond at the source end
         drawDiamond(gc, sourceClass.getX(), sourceClass.getY());
         gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
     }
@@ -534,23 +533,23 @@ public class Relationship {
         gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
     }
 
-    public void drawGeneralization(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        // Draw open arrow at the target end
-        drawArrow(gc, targetClass.getX(), targetClass.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
+//    public void drawGeneralization(GraphicsContext gc) {
+//        gc.setStroke(Color.BLACK);
+//        gc.setLineWidth(1);
+//        // Draw open arrow at the target end
+//        drawArrow(gc, targetClass.getX(), targetClass.getY());
+//        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
+//    }
 
-    public void drawRealization(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineDashes(4);
-        gc.setLineWidth(1);
-        // Draw open arrow at the target end
-        drawArrow(gc, targetInterface.getX(), targetInterface.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetInterface.getX(), targetInterface.getY());
-        gc.setLineDashes(0); // Reset dashes
-    }
+//    public void drawRealization(GraphicsContext gc) {
+//        gc.setStroke(Color.BLACK);
+//        gc.setLineDashes(4);
+//        gc.setLineWidth(1);
+//        // Draw open arrow at the target end
+//        drawArrow(gc, targetInterface.getX(), targetInterface.getY());
+//        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetInterface.getX(), targetInterface.getY());
+//        gc.setLineDashes(0); // Reset dashes
+//    }
 
     private void drawDiamond(GraphicsContext gc, double x, double y) {
         gc.setFill(Color.WHITE);
