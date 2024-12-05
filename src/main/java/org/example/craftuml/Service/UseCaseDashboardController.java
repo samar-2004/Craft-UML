@@ -373,10 +373,28 @@ public class UseCaseDashboardController {
 
     @FXML
     private void handleAddActor() {
+        if (!isActiveDiagramSelected()) {
+            // Show error message if no active diagram
+            showErrorMessage("No active diagram. Please create a use case diagram first.");
+            return;
+        }
+
         TextInputDialog dialog = new TextInputDialog("Actor Name");
         dialog.setTitle("Add Actor");
         dialog.setHeaderText("Enter the Actor Name");
         dialog.setContentText("Name:");
+
+        // Get the dialog's input field and "OK" button
+        TextField inputField = dialog.getEditor();
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+
+        // Initially disable the OK button
+        okButton.setDisable(true);
+
+        // Add a listener to the input field to enable/disable the OK button based on the naming convention
+        inputField.textProperty().addListener((observable, oldValue, newValue) -> {
+            okButton.setDisable(!isUpperCamelCase(newValue)); // Enable only if valid
+        });
 
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(actorName -> {
@@ -392,7 +410,7 @@ public class UseCaseDashboardController {
                 actors.add(actor);
 
                 // Position calculation (modify as needed)
-                double x = 50 + actors.size() * 50; // Example positioning logic
+                double x = actors.size() * 50; // Example positioning logic
                 double y = 100 + actors.size() * 30;
 
                 actor.setX(x);
@@ -512,10 +530,28 @@ public class UseCaseDashboardController {
 
     @FXML
     private void handleAddUseCase() {
+        if (!isActiveDiagramSelected()) {
+            // Show error message if no active diagram
+            showErrorMessage("No active diagram. Please create a use case diagram first.");
+            return;
+        }
+
         TextInputDialog dialog = new TextInputDialog("UseCase Name");
         dialog.setTitle("Add Use Case");
         dialog.setHeaderText("Enter the Use Case Name");
         dialog.setContentText("Name:");
+
+        // Get the dialog's input field and "OK" button
+        TextField inputField = dialog.getEditor();
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+
+        // Initially disable the OK button
+        okButton.setDisable(true);
+
+        // Add a listener to the input field to enable/disable the OK button based on the naming convention
+        inputField.textProperty().addListener((observable, oldValue, newValue) -> {
+            okButton.setDisable(!isUpperCamelCase(newValue)); // Enable only if valid
+        });
 
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(useCaseName -> {
@@ -531,8 +567,8 @@ public class UseCaseDashboardController {
                 useCases.add(useCase);
 
                 // Position calculation (modify as needed)
-                double x = 50 + useCases.size() * 50; // Example positioning logic
-                double y = 200 + useCases.size() * 30;
+                double x = 100 + useCases.size() * 50; // Example positioning logic
+                double y = 50 + useCases.size() * 30;
 
                 useCase.setX(x);
                 useCase.setY(y);
@@ -543,6 +579,11 @@ public class UseCaseDashboardController {
                 enableDragging();
             }
         });
+    }
+
+    private boolean isActiveDiagramSelected() {
+        // Replace with your actual logic to check if a use case diagram is active
+        return activeDiagram != null ;
     }
 
     private boolean isUpperCamelCase(String name) {
@@ -916,8 +957,6 @@ public class UseCaseDashboardController {
         });
     }
 
-
-
     private void editUseCaseName(UseCase useCase) {
         TextInputDialog dialog = new TextInputDialog(useCase.getName());
         dialog.setTitle("Edit Use Case Name");
@@ -946,7 +985,6 @@ public class UseCaseDashboardController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
 
 //    private UseCase findClickedUseCase(double clickX, double clickY) {
 //        for (UseCase useCase : useCases) {
@@ -1041,9 +1079,18 @@ public class UseCaseDashboardController {
     @FXML
     private void handleAddAssociation() {
         if (activeDiagram != null) {
-            // Open a new window for selecting actor and use case
-            openSelectionWindow();
+            if (!useCases.isEmpty() && !actors.isEmpty()) {
+                // Open a new window for selecting actor and use case
+                openSelectionWindow();
+            }
+            else {
+                showErrorMessage("Not enough UseCases or Actors are present !");
+            }
         }
+        else {
+            showErrorMessage("No active diagram. Please create a use case diagram first.");
+        }
+
     }
 
     private void openSelectionWindow() {
@@ -1251,13 +1298,23 @@ public class UseCaseDashboardController {
     @FXML
     private void handleAddInclude() {
         if (activeDiagram != null) {
-            openUseCaseSelectionWindow("include");
+            if (!useCases.isEmpty()){
+                openUseCaseSelectionWindow("include");
+            }
+        }
+        else {
+            showErrorMessage("No active diagram. Please create a use case diagram first.");
         }
     }
     @FXML
     private void handleAddExtend() {
         if (activeDiagram != null) {
-            openUseCaseSelectionWindow("extend");
+            if (!useCases.isEmpty()) {
+                openUseCaseSelectionWindow("extend");
+            }
+        }
+        else {
+            showErrorMessage("No active diagram. Please create a use case diagram first.");
         }
     }
 
@@ -1536,6 +1593,10 @@ public class UseCaseDashboardController {
         alert.setHeaderText("Craft UML");
         alert.setContentText("Craft UML - A tool for creating UML diagrams and generating code.");
         alert.showAndWait();
+    }
+
+    public void setActiveDiagram(UseCaseDiagram diagram) {
+        this.activeDiagram = diagram;
     }
 
 }
