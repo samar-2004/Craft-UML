@@ -87,10 +87,9 @@
     </center>
 
     <right>
-        <VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #D3D3D3;">
-            <Label text="Use Case Information" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: black;" />
+        <VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #D3D3D3;" alignment="TOP_CENTER">
+            <Label text="USE CASE INFORMATION" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: black;" />
             <ListView fx:id="modelInfoList" styleClass="list-view" />
         </VBox>
     </right>
-
 </BorderPane>

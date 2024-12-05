@@ -138,6 +138,10 @@ public class UseCaseDiagram {
         }
     }
 
+    public boolean isUseCaseDiagram() {
+        return true; // This indicates the instance is a use case diagram
+    }
+
     private boolean isUseCaseRelationExists(UseCase useCase1, UseCase useCase2, String relationType) {
         for (UseCaseToUseCaseRelation relation : useCaseRelations) {
             if (relation.getUseCase1().equals(useCase1.getName()) &&
