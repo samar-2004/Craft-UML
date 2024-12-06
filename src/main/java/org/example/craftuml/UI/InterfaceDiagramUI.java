@@ -22,6 +22,7 @@ public class InterfaceDiagramUI {
 
     private InterfaceData interfaceDiagram;
     private Canvas drawingCanvas;
+    Label errorLabel = new Label();
     private List<InterfaceData> interfaces;
 
     public InterfaceDiagramUI(Canvas drawingCanvas,List<InterfaceData> interfaces)
@@ -43,7 +44,9 @@ public class InterfaceDiagramUI {
     }
 
     public InterfaceData showInterfaceDiagramDialog() {
+
         Stage inputStage = new Stage();
+        errorLabel.setVisible(false);
         inputStage.setTitle("Add or Edit Interface");
 
         VBox vbox = new VBox(15);
@@ -141,7 +144,7 @@ public class InterfaceDiagramUI {
             }
 
             for (InterfaceData diagram : interfaces) {
-                if (diagram.getName().equalsIgnoreCase(className)) {
+                if (diagram.getName().equalsIgnoreCase(className) && !diagram.equals(interfaceDiagram)) {
                     showError("An interface diagram with this name already exists.");
                     return;
                 }
@@ -153,6 +156,11 @@ public class InterfaceDiagramUI {
             }
 
             if (!areFieldsFilled(methodsVBox)) {
+                showError("Please ensure all fields are filled for each method.");
+                return;
+            }
+            if(errorLabel.isVisible())
+            {
                 showError("Please ensure all fields are filled for each method.");
                 return;
             }
@@ -267,7 +275,6 @@ public class InterfaceDiagramUI {
         returnTypeField.setPromptText("Enter Return Type");
         returnTypeField.setText(existingMethod != null ? existingMethod.getReturnType() : "");
 
-        Label errorLabel = new Label();
         errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
         errorLabel.setVisible(false);
 
