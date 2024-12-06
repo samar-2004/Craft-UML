@@ -34,6 +34,9 @@ public class InterfaceDiagramUI {
         this.interfaces = interfaces;
     }
     public InterfaceDiagramUI(Canvas drawingCanvas, InterfaceData interfaceDiagram,List<InterfaceData> interfaces) {
+        if (drawingCanvas == null) {
+            throw new IllegalArgumentException("Canvas cannot be null");
+        }
         this.drawingCanvas = drawingCanvas;
         this.interfaceDiagram = interfaceDiagram;
         this.interfaces = interfaces;
@@ -139,11 +142,15 @@ public class InterfaceDiagramUI {
 
             for (InterfaceData diagram : interfaces) {
                 if (diagram.getName().equalsIgnoreCase(className)) {
-                    showError("A class diagram with this name already exists.");
+                    showError("An interface diagram with this name already exists.");
                     return;
                 }
             }
 
+            String originalClassName = interfaceDiagram.getName();
+            if (originalClassName == null || !originalClassName.equalsIgnoreCase(className)) {
+                interfaceDiagram.setName(className);
+            }
 
             if (!areFieldsFilled(methodsVBox)) {
                 showError("Please ensure all fields are filled for each method.");
@@ -185,7 +192,7 @@ public class InterfaceDiagramUI {
         return interfaceDiagram;
     }
 
-    private boolean validateInterfaceName(String interfaceName, TextField field) {
+    public boolean validateInterfaceName(String interfaceName, TextField field) {
         if (interfaceName == null || interfaceName.trim().isEmpty() || interfaceName.contains(" ")) {
             field.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
             showError("Invalid Interface Name! It cannot be empty or contain spaces.");
@@ -195,7 +202,7 @@ public class InterfaceDiagramUI {
         return true;
     }
 
-    private boolean areFieldsFilled(VBox vBox) {
+    public boolean areFieldsFilled(VBox vBox) {
         for (Node node : vBox.getChildren()) {
             if (node instanceof VBox) {
                 VBox entryVBox = (VBox) node;
@@ -236,7 +243,7 @@ public class InterfaceDiagramUI {
         }
         return true;
     }
-    private void addMethodField(VBox methodsVBox, MethodData existingMethod) {
+    public void addMethodField(VBox methodsVBox, MethodData existingMethod) {
         Region separator = new Region();
         separator.setStyle("-fx-background-color: #D3D3D3; -fx-min-height: 1.5px;");
 
@@ -344,7 +351,7 @@ public class InterfaceDiagramUI {
         return methods;
     }
 
-    private void showError(String message) {
+    public void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText(null);

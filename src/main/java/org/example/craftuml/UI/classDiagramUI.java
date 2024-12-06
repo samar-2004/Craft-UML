@@ -169,7 +169,7 @@ public class classDiagramUI
             }
 
             for (ClassDiagram diagram : classDiagrams) {
-                if (diagram.getName().equalsIgnoreCase(className)) {
+                if (diagram.getName().equalsIgnoreCase(className) && !diagram.equals(currentClassDiagram)) {
                     showError("A class diagram with this name already exists.");
                     return;
                 }
@@ -232,7 +232,7 @@ public class classDiagramUI
         return currentClassDiagram;
     }
 
-    private boolean areFieldsFilled(VBox vBox) {
+    public boolean areFieldsFilled(VBox vBox) {
         for (Node node : vBox.getChildren()) {
             if (node instanceof VBox) {
                 VBox entryVBox = (VBox) node;
@@ -281,7 +281,7 @@ public class classDiagramUI
     }
 
 
-    private void addAttributeField(VBox attributesVBox, AttributeData existingAttribute) {
+    public void addAttributeField(VBox attributesVBox, AttributeData existingAttribute) {
         Region separator = new Region();
         separator.setStyle("-fx-background-color: #D3D3D3; -fx-min-height: 1.5px;");
         long attributeCount = attributesVBox.getChildren().stream()
@@ -318,7 +318,7 @@ public class classDiagramUI
         attributesVBox.getChildren().addAll(newAttributeVBox, separator);
     }
 
-    private void addMethodField(VBox methodsVBox, MethodData existingMethod,Button okButton) {
+    public void addMethodField(VBox methodsVBox, MethodData existingMethod, Button okButton) {
         Region separator = new Region();
         separator.setStyle("-fx-background-color: #D3D3D3; -fx-min-height: 1.5px;");
 
@@ -373,7 +373,7 @@ public class classDiagramUI
         newMethodVBox.getChildren().addAll(methodLabel, fieldBox);
         methodsVBox.getChildren().addAll(newMethodVBox, separator);
     }
-    private boolean validateMethodName(String methodName) {
+    public boolean validateMethodName(String methodName) {
         if (methodName == null || methodName.isEmpty()) {
             return false;
         }
@@ -464,7 +464,7 @@ public class classDiagramUI
         return methods;
     }
 
-    private void showError(String message) {
+    public void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText(null);

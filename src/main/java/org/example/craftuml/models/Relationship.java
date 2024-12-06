@@ -327,7 +327,7 @@ public class Relationship {
 
 
 
-    private double[] calculateOrthogonalBorderIntersection(
+    public double[] calculateOrthogonalBorderIntersection(
             double rectX, double rectY, double rectWidth, double rectHeight,
             double sourceX, double sourceY, double targetX, double targetY) {
 
@@ -512,68 +512,7 @@ public class Relationship {
     public String getType() {
         return type;
     }
-    public void drawAssociation(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
 
-    public void drawAggregation(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        drawDiamond(gc, sourceClass.getX(), sourceClass.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
-
-    public void drawComposition(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        // Draw filled diamond at the source end
-        drawFilledDiamond(gc, sourceClass.getX(), sourceClass.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
-
-//    public void drawGeneralization(GraphicsContext gc) {
-//        gc.setStroke(Color.BLACK);
-//        gc.setLineWidth(1);
-//        // Draw open arrow at the target end
-//        drawArrow(gc, targetClass.getX(), targetClass.getY());
-//        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-//    }
-
-//    public void drawRealization(GraphicsContext gc) {
-//        gc.setStroke(Color.BLACK);
-//        gc.setLineDashes(4);
-//        gc.setLineWidth(1);
-//        // Draw open arrow at the target end
-//        drawArrow(gc, targetInterface.getX(), targetInterface.getY());
-//        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetInterface.getX(), targetInterface.getY());
-//        gc.setLineDashes(0); // Reset dashes
-//    }
-
-    private void drawDiamond(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.WHITE);
-        gc.setStroke(Color.BLACK);
-        double[] xPoints = {x, x - 10, x, x + 10};
-        double[] yPoints = {y, y + 10, y + 20, y + 10};
-        gc.strokePolygon(xPoints, yPoints, 4);
-    }
-
-    private void drawFilledDiamond(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.BLACK);
-        gc.setStroke(Color.BLACK);
-        double[] xPoints = {x, x - 10, x, x + 10};
-        double[] yPoints = {y, y + 10, y + 20, y + 10};
-        gc.fillPolygon(xPoints, yPoints, 4);
-    }
-
-    private void drawArrow(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.WHITE);
-        gc.setStroke(Color.BLACK);
-        double[] xPoints = {x, x - 10, x + 10};
-        double[] yPoints = {y, y - 20, y - 20};
-        gc.strokePolygon(xPoints, yPoints, 3);
-    }
 }
 
 
