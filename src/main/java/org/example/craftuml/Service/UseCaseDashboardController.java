@@ -1266,16 +1266,7 @@ public class UseCaseDashboardController {
                 useCaseBoundaryPoint.getX(), useCaseBoundaryPoint.getY());
     }
 
-    /**
-     * Calculates the nearest point on the rectangle's boundary to the given point.
-     * @param rectX      Top-left X of the rectangle.
-     * @param rectY      Top-left Y of the rectangle.
-     * @param rectWidth  Width of the rectangle.
-     * @param rectHeight Height of the rectangle.
-     * @param pointX     X-coordinate of the external point.
-     * @param pointY     Y-coordinate of the external point.
-     * @return The nearest point on the rectangle's boundary.
-     */
+
     private Point2D getNearestBoundaryPoint(double rectX, double rectY, double rectWidth, double rectHeight,
                                             double pointX, double pointY) {
         // Calculate the rectangle's center
@@ -1553,9 +1544,6 @@ public class UseCaseDashboardController {
 
     }
 
-    /**
-     * Draws an arrowhead pointing from (x1, y1) to (x2, y2).
-     */
     private void drawArrowhead(GraphicsContext gc, double x1, double y1, double x2, double y2) {
         double angle = Math.atan2(y2 - y1, x2 - x1);
         double arrowLength = 10;
@@ -1805,12 +1793,6 @@ public class UseCaseDashboardController {
     public void handleExit() {
         System.out.println("Exiting application...");
         // Logic to exit the application
-    }
-
-    // Generate code (Placeholder method)
-    public void handleGenerateCode() {
-        System.out.println("Generating code...");
-        // Logic to generate code for the diagram
     }
 
     // Export diagram (Placeholder method)

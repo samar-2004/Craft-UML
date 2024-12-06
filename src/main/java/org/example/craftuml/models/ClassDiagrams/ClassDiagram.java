@@ -124,13 +124,4 @@ public class ClassDiagram implements DiagramComponent {
     public double getHeight() {
         return this.height;
     }
-
-    public void addRelationship(Relationship relationship){
-       this.relationships.add(relationship);
-    }
-    public void removeRelationship(Relationship relationship)
-    {
-
-    }
-
 }

@@ -232,8 +232,8 @@ public class ClassDashboardController {
         for (Relationship relationship : generalizations) {
             relationship.drawGeneralization(gc);
         }
+        updateListView();
     }
-
     @FXML
     private void handleClassDiagram() {
         classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas,classDiagrams);
@@ -784,7 +784,8 @@ public class ClassDashboardController {
     }
 
     private void editRelationship(Relationship activeRelationship) {
-        if (activeRelationship != null && !activeRelationship.getType().equals("Realization"))
+        if (activeRelationship != null && !activeRelationship.getType().equals("Realization")
+                && !activeRelationship.getType().equals("Generalization"))
         {
             String sourceName = activeRelationship.getSourceClass().getName();
             String targetName = activeRelationship.getTargetClass().getName();
@@ -798,7 +799,9 @@ public class ClassDashboardController {
 
             String newSourceName = namesAndRelationshipName[0];
             String newTargetName = namesAndRelationshipName[1];
-            String newRelationshipName = namesAndRelationshipName[2];
+            String newSourceMul = namesAndRelationshipName[2];
+            String newTargetMul = namesAndRelationshipName[3];
+            String newRelationshipName = namesAndRelationshipName[4];
 
             try {
                 ClassDiagram newSource = findDiagramByName(newSourceName);
@@ -807,6 +810,8 @@ public class ClassDashboardController {
                 activeRelationship.setSourceClass(newSource);
                 activeRelationship.setTargetClass(newTarget);
                 activeRelationship.setRelationName(newRelationshipName);
+                activeRelationship.setSourceMultiplicity(newSourceMul);
+                activeRelationship.setTargetMultiplicity(newTargetMul);
                 redrawCanvas();
             } catch (IllegalArgumentException e) {
                 showErrorAlert(e.getMessage());
@@ -826,8 +831,6 @@ public class ClassDashboardController {
             try {
                 ClassDiagram newSource = findDiagramByName(newSourceName);
                 InterfaceData newTarget = findInterfaceDiagramByName(newTargetName);
-
-                // Update the active relationship with the new values
                 activeRelationship.setSourceClass(newSource);
                 activeRelationship.setTargetInterface(newTarget);
                 redrawCanvas();
@@ -835,7 +838,30 @@ public class ClassDashboardController {
                 showErrorAlert(e.getMessage());
             }
         }
+        else if (activeRelationship != null && activeRelationship.getType().equals("Generalization")) {
+            // Editing a Generalization relationship
+            String sourceName = activeRelationship.getSourceClass().getName();
+            String targetName = activeRelationship.getTargetClass().getName();
 
+            String[] namesAndRelationshipName = promptForGeneralization(sourceName, targetName);
+
+            if (namesAndRelationshipName == null) return;
+
+            String newSourceName = namesAndRelationshipName[0];
+            String newTargetName = namesAndRelationshipName[1];
+
+            try {
+                ClassDiagram newSource = findDiagramByName(newSourceName);
+                ClassDiagram newTarget = findDiagramByName(newTargetName);
+
+                activeRelationship.setSourceClass(newSource);
+                activeRelationship.setTargetClass(newTarget);
+
+                redrawCanvas();
+            } catch (IllegalArgumentException e) {
+                showErrorAlert(e.getMessage());
+            }
+        }
 
         else
         {
@@ -854,6 +880,77 @@ public class ClassDashboardController {
 
 
     }
+    private String[] promptForGeneralization(String defaultSource, String defaultTarget) {
+        Dialog<String[]> dialog = new Dialog<>();
+        dialog.setTitle("Add/Edit Generalization Relationship");
+        dialog.setHeaderText("Select the source and target class diagrams for Generalization.");
+
+        ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+        // ComboBoxes for source and target classes
+        ComboBox<String> sourceBox = new ComboBox<>();
+        ComboBox<String> targetBox = new ComboBox<>();
+
+        // Populate class diagram ComboBoxes
+        for (ClassDiagram diagram : classDiagrams) {
+            sourceBox.getItems().add(diagram.getName());
+            targetBox.getItems().add(diagram.getName());
+        }
+
+        sourceBox.setValue(defaultSource);
+        targetBox.setValue(defaultTarget);
+
+        String sourceMultiplicity = "0";
+        String targetMultiplicity = "0";
+
+        // Empty for Generalization
+
+        // Disable OK button initially
+        Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
+        okButton.setDisable(true);
+
+        // Change listener to enable the OK button only when both source and target classes are selected
+        ChangeListener<Object> enableOkButtonListener = (obs, oldVal, newVal) -> {
+            okButton.setDisable(
+                    sourceBox.getValue() == null ||
+                            targetBox.getValue() == null
+            );
+        };
+
+        sourceBox.valueProperty().addListener(enableOkButtonListener);
+        targetBox.valueProperty().addListener(enableOkButtonListener);
+
+        // Layout using GridPane
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label("Source:"), 0, 0);
+        grid.add(sourceBox, 1, 0);
+        grid.add(new Label("Target:"), 0, 1);
+        grid.add(targetBox, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) {
+                if (sourceBox.getValue() != null && targetBox.getValue() != null) {
+                    return new String[]{
+                            sourceBox.getValue(),
+                            targetBox.getValue(),
+                            sourceMultiplicity, // Always "0..0" for source
+                            targetMultiplicity, // Always "0..0" for target
+                            "" // Empty relationship name for Generalization
+                    };
+                }
+            }
+            return null;
+        });
+
+        Optional<String[]> result = dialog.showAndWait();
+        return result.orElse(null); // Return null if no result is found
+    }
+
 
     private String[] promptForSourceAndTargetClassesWithDefaults2(String sourceName, String targetName) {
         Dialog<String[]> dialog = new Dialog<>();
@@ -874,7 +971,6 @@ public class ClassDashboardController {
             targetBox.getItems().add(diagram.getName());
         }
 
-        // Set the default values if they are provided
         sourceBox.setValue(sourceName);
         targetBox.setValue(targetName);
 
@@ -891,7 +987,6 @@ public class ClassDashboardController {
 
         dialog.getDialogPane().setContent(grid);
 
-        // Handle the result when the user clicks OK
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == okButtonType) {
                 if (sourceBox.getValue() != null && targetBox.getValue() != null) {
@@ -1206,7 +1301,6 @@ public class ClassDashboardController {
         ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 
-        // ComboBoxes for source and target classes
         ComboBox<String> sourceBox = new ComboBox<>();
         ComboBox<String> targetBox = new ComboBox<>();
 
@@ -1297,7 +1391,7 @@ public class ClassDashboardController {
     )
     {
         Dialog<String[]> dialog = new Dialog<>();
-        dialog.setTitle("Add/Edit Relationship");
+        dialog.setTitle("Edit Relationship");
         dialog.setHeaderText("Select the source and target class diagrams, specify multiplicities, and enter a relationship name.");
 
         ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
@@ -1416,9 +1510,114 @@ public class ClassDashboardController {
     }
 
     @FXML
-    public void handleAddGeneralization() {
-        addRelationship("Generalization");
+    private void handleAddGeneralization() {
+        addGeneralization();
     }
+
+    private void addGeneralization() {
+        String[] details = promptForSourceAndTargetClassesWithoutExtras();
+        if (details == null) return;
+
+        String sourceName = details[0];
+        String targetName = details[1];
+
+        try {
+            ClassDiagram source = findDiagramByName(sourceName);
+            ClassDiagram target = findDiagramByName(targetName);
+
+            if (source == null || target == null) {
+                showErrorAlert("Source or Target diagram not found.");
+                return;
+            }
+
+            // Handle Generalization type relationship
+            if (activeRelationship == null) {
+                Relationship relationship = new Relationship(
+                        source,
+                        target,
+                        "Generalization", // Relationship type
+                        "0", // Default multiplicity for Generalization
+                        "0", // Default multiplicity for Generalization
+                        null, // No obstacles for Generalization
+                        "" // Empty relationship name
+                );
+
+                addRelationshipToList(relationship);
+            } else {
+                activeRelationship.setSourceClass(source);
+                activeRelationship.setTargetClass(target);
+                activeRelationship.setRelationName(""); // Empty name for Generalization
+                activeRelationship.setType("Generalization");
+                activeRelationship.setSourceMultiplicity("0");
+                activeRelationship.setTargetMultiplicity("0");
+            }
+
+            redrawCanvas();
+
+        } catch (IllegalArgumentException e) {
+            showErrorAlert(e.getMessage());
+        }
+    }
+
+    private String[] promptForSourceAndTargetClassesWithoutExtras() {
+        Dialog<String[]> dialog = new Dialog<>();
+        dialog.setTitle("Add Generalization");
+        dialog.setHeaderText("Select the source and target class diagrams.");
+
+        ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+        ComboBox<String> sourceBox = new ComboBox<>();
+        ComboBox<String> targetBox = new ComboBox<>();
+
+        // Populate class diagram ComboBoxes
+        for (ClassDiagram diagram : classDiagrams) {
+            sourceBox.getItems().add(diagram.getName());
+            targetBox.getItems().add(diagram.getName());
+        }
+
+        sourceBox.setPromptText("Select Source");
+        targetBox.setPromptText("Select Target");
+
+        Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
+        okButton.setDisable(true);
+
+        ChangeListener<Object> enableOkButtonListener = (obs, oldVal, newVal) -> {
+            okButton.setDisable(
+                    sourceBox.getValue() == null || targetBox.getValue() == null
+            );
+        };
+
+        sourceBox.valueProperty().addListener(enableOkButtonListener);
+        targetBox.valueProperty().addListener(enableOkButtonListener);
+
+        // Layout using GridPane
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label("Source:"), 0, 0);
+        grid.add(sourceBox, 1, 0);
+        grid.add(new Label("Target:"), 0, 1);
+        grid.add(targetBox, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) {
+                if (sourceBox.getValue() != null && targetBox.getValue() != null) {
+                    return new String[]{
+                            sourceBox.getValue(),
+                            targetBox.getValue(),
+                    };
+                }
+            }
+            return null;
+        });
+
+        Optional<String[]> result = dialog.showAndWait();
+        return result.orElse(null); // Return null if no result is found
+    }
+
 
     private void addRelationship(String relationshipType) {
         String[] details = promptForSourceAndTargetClasses();
@@ -1586,7 +1785,6 @@ public class ClassDashboardController {
         Optional<ButtonType> result = confirmationAlert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             clearWorkspace();
-            System.out.println("New project initialized.");
         } else {
             System.out.println("New project creation canceled.");
         }
@@ -1625,17 +1823,14 @@ public class ClassDashboardController {
         if (contextMenu != null) {
             contextMenu.hide();
         }
-        System.out.println("Workspace cleared and reset to initial state.");
     }
 
 
     @FXML
     private void handleSaveProject() {
-        // Create a FileChooser to allow the user to select the save location
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Project");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
-
         File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
 
         if (file != null) {
@@ -1644,11 +1839,13 @@ public class ClassDashboardController {
                 writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
                 writer.write("<Project>\n");
 
-                // Write class diagrams
+                // Save Class Diagrams
                 writer.write("    <ClassDiagrams>\n");
                 for (ClassDiagram diagram : classDiagrams) {
                     writer.write("        <ClassDiagram>\n");
                     writer.write("            <Name>" + diagram.getName() + "</Name>\n");
+                    writer.write("            <X>" + diagram.getX() + "</X>\n");  // Save X coordinate
+                    writer.write("            <Y>" + diagram.getY() + "</Y>\n");  // Save Y coordinate
                     writer.write("            <Attributes>\n");
                     for (AttributeData attribute : diagram.getAttributes()) {
                         writer.write("                <Attribute>\n");
@@ -1671,11 +1868,13 @@ public class ClassDashboardController {
                 }
                 writer.write("    </ClassDiagrams>\n");
 
-                // Write interface diagrams
+                // Save Interface Diagrams
                 writer.write("    <InterfaceDiagrams>\n");
                 for (InterfaceData diagram : interfaceDiagrams) {
                     writer.write("        <InterfaceDiagram>\n");
                     writer.write("            <Name>" + diagram.getName() + "</Name>\n");
+                    writer.write("            <X>" + diagram.getX() + "</X>\n");  // Save X coordinate
+                    writer.write("            <Y>" + diagram.getY() + "</Y>\n");  // Save Y coordinate
                     writer.write("            <Methods>\n");
                     for (MethodData method : diagram.getMethods()) {
                         writer.write("                <Method>\n");
@@ -1689,7 +1888,25 @@ public class ClassDashboardController {
                 }
                 writer.write("    </InterfaceDiagrams>\n");
 
-                // End XML document
+
+                writer.write("    <Relationships>\n");
+                for (Relationship relationship : associations) {
+                    saveRelationship(writer, relationship, "association");
+                }
+                for (Relationship relationship : aggregations) {
+                    saveRelationship(writer, relationship, "aggregation");
+                }
+                for (Relationship relationship : compositions) {
+                    saveRelationship(writer, relationship, "composition");
+                }
+                for (Relationship relationship : realizations) {
+                    saveRelationship(writer, relationship, "Realization");
+                }
+                for (Relationship relationship : generalizations) {
+                    saveRelationship(writer, relationship, "Generalization");
+                }
+                writer.write("    </Relationships>\n");
+
                 writer.write("</Project>\n");
 
                 showAlert(Alert.AlertType.INFORMATION, "Save Project", "Project saved successfully.");
@@ -1698,6 +1915,28 @@ public class ClassDashboardController {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void saveRelationship(BufferedWriter writer, Relationship relationship, String type) throws IOException {
+        writer.write("        <Relationship>\n");
+        writer.write("            <Type>" + type + "</Type>\n");
+        writer.write("            <Source>" + relationship.getSourceClass().getName() + "</Source>\n");
+
+        // If it's a Realization, the target is an interface, otherwise it's a class
+        String targetName = (relationship.getTargetInterface() != null) ? relationship.getTargetInterface().getName() : relationship.getTargetClass().getName();
+        writer.write("            <Target>" + targetName + "</Target>\n");
+
+        writer.write("            <Name>" + relationship.getRelationName() + "</Name>\n");
+        writer.write("            <SourceMultiplicity>" + relationship.getSourceClassMultiplicity() + "</SourceMultiplicity>\n");
+        writer.write("            <TargetMultiplicity>" + relationship.getTargetClassMultiplicity() + "</TargetMultiplicity>\n");
+
+
+        writer.write("            <SourceX>" + relationship.getStartX() + "</SourceX>\n");  // Source X
+        writer.write("            <SourceY>" + relationship.getStartY() + "</SourceY>\n");  // Source Y
+        writer.write("            <TargetX>" + relationship.getEndX() + "</TargetX>\n");    // Target X
+        writer.write("            <TargetY>" + relationship.getEndY() + "</TargetY>\n");    // Target Y
+
+        writer.write("        </Relationship>\n");
     }
 
     @FXML
@@ -1710,9 +1949,14 @@ public class ClassDashboardController {
 
         if (file != null) {
             try {
-                // Clear existing diagrams
+                // Clear existing diagrams and relationships
                 classDiagrams.clear();
                 interfaceDiagrams.clear();
+                associations.clear();
+                aggregations.clear();
+                compositions.clear();
+                realizations.clear();
+                generalizations.clear();
                 redrawCanvas(); // Clear the canvas
 
                 // Load and parse the XML file
@@ -1725,43 +1969,7 @@ public class ClassDashboardController {
                 NodeList classDiagramNodes = document.getElementsByTagName("ClassDiagram");
                 for (int i = 0; i < classDiagramNodes.getLength(); i++) {
                     Element classElement = (Element) classDiagramNodes.item(i);
-                    String className = classElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                    ClassDiagram classDiagram = new ClassDiagram();
-                    classDiagram.setName(className);
-
-                    // Load Attributes
-                    NodeList attributeNodes = classElement.getElementsByTagName("Attribute");
-                    for (int j = 0; j < attributeNodes.getLength(); j++) {
-                        Element attributeElement = (Element) attributeNodes.item(j);
-                        String accessModifier = attributeElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
-                        String dataType = attributeElement.getElementsByTagName("DataType").item(0).getTextContent();
-                        String attributeName = attributeElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                        AttributeData attribute = new AttributeData();
-                        attribute.setAccessModifier(accessModifier);
-                        attribute.setDataType(dataType);
-                        attribute.setName(attributeName);
-                        classDiagram.getAttributes().add(attribute);
-                    }
-
-                    // Load Methods
-                    NodeList methodNodes = classElement.getElementsByTagName("Method");
-                    for (int j = 0; j < methodNodes.getLength(); j++) {
-                        Element methodElement = (Element) methodNodes.item(j);
-                        String accessModifier = methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
-                        String returnType = methodElement.getElementsByTagName("ReturnType").item(0).getTextContent();
-                        String methodName = methodElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                        MethodData method = new MethodData();
-                        method.setAccessModifier(accessModifier);
-                        method.setReturnType(returnType);
-                        method.setName(methodName);
-                        classDiagram.getMethods().add(method);
-                    }
-
-
-                    // Add the class diagram to the list
+                    ClassDiagram classDiagram = loadClassDiagram(classElement);
                     classDiagrams.add(classDiagram);
                 }
 
@@ -1769,31 +1977,18 @@ public class ClassDashboardController {
                 NodeList interfaceDiagramNodes = document.getElementsByTagName("InterfaceDiagram");
                 for (int i = 0; i < interfaceDiagramNodes.getLength(); i++) {
                     Element interfaceElement = (Element) interfaceDiagramNodes.item(i);
-                    String interfaceName = interfaceElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                    InterfaceData interfaceDiagram = new InterfaceData();
-                    interfaceDiagram.setName(interfaceName);
-
-                    // Load Methods
-                    NodeList methodNodes = interfaceElement.getElementsByTagName("Method");
-                    for (int j = 0; j < methodNodes.getLength(); j++) {
-                        Element methodElement = (Element) methodNodes.item(j);
-                        String accessModifier = methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent();
-                        String returnType = methodElement.getElementsByTagName("ReturnType").item(0).getTextContent();
-                        String methodName = methodElement.getElementsByTagName("Name").item(0).getTextContent();
-
-                        MethodData method = new MethodData();
-                        method.setAccessModifier(accessModifier);
-                        method.setReturnType(returnType);
-                        method.setName(methodName);
-                        interfaceDiagram.getMethods().add(method);
-                    }
-
-                    // Add the interface diagram to the list
+                    InterfaceData interfaceDiagram = loadInterfaceDiagram(interfaceElement);
                     interfaceDiagrams.add(interfaceDiagram);
                 }
 
-                // Redraw the canvas with the loaded diagrams
+                // Load Relationships
+                NodeList relationshipNodes = document.getElementsByTagName("Relationship");
+                for (int i = 0; i < relationshipNodes.getLength(); i++) {
+                    Element relationshipElement = (Element) relationshipNodes.item(i);
+                    Relationship relationship = loadRelationship(relationshipElement);
+                    addToRelationshipList(relationship);
+                }
+
                 redrawCanvas();
                 showAlert(Alert.AlertType.INFORMATION, "Open Project", "Project loaded successfully.");
             } catch (Exception e) {
@@ -1802,6 +1997,128 @@ public class ClassDashboardController {
             }
         }
     }
+
+    private ClassDiagram loadClassDiagram(Element classElement) {
+        String className = classElement.getElementsByTagName("Name").item(0).getTextContent();
+        double x = Double.parseDouble(classElement.getElementsByTagName("X").item(0).getTextContent()); // Load X coordinate
+        double y = Double.parseDouble(classElement.getElementsByTagName("Y").item(0).getTextContent()); // Load Y coordinate
+        ClassDiagram classDiagram = new ClassDiagram();
+        classDiagram.setName(className);
+        classDiagram.setX(x);  // Set X coordinate
+        classDiagram.setY(y);
+        // Load Attributes
+        NodeList attributeNodes = classElement.getElementsByTagName("Attribute");
+        for (int j = 0; j < attributeNodes.getLength(); j++) {
+            Element attributeElement = (Element) attributeNodes.item(j);
+            AttributeData attribute = new AttributeData();
+            attribute.setAccessModifier(attributeElement.getElementsByTagName("AccessModifier").item(0).getTextContent());
+            attribute.setDataType(attributeElement.getElementsByTagName("DataType").item(0).getTextContent());
+            attribute.setName(attributeElement.getElementsByTagName("Name").item(0).getTextContent());
+            classDiagram.getAttributes().add(attribute);
+        }
+
+        // Load Methods
+        NodeList methodNodes = classElement.getElementsByTagName("Method");
+        for (int j = 0; j < methodNodes.getLength(); j++) {
+            Element methodElement = (Element) methodNodes.item(j);
+            MethodData method = new MethodData();
+            method.setAccessModifier(methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent());
+            method.setReturnType(methodElement.getElementsByTagName("ReturnType").item(0).getTextContent());
+            method.setName(methodElement.getElementsByTagName("Name").item(0).getTextContent());
+            classDiagram.getMethods().add(method);
+        }
+
+        return classDiagram;
+    }
+
+    private InterfaceData loadInterfaceDiagram(Element interfaceElement) {
+        String interfaceName = interfaceElement.getElementsByTagName("Name").item(0).getTextContent();
+        double x = Double.parseDouble(interfaceElement.getElementsByTagName("X").item(0).getTextContent());  // Load X coordinate
+        double y = Double.parseDouble(interfaceElement.getElementsByTagName("Y").item(0).getTextContent());  // Load Y coordinate
+
+        InterfaceData interfaceDiagram = new InterfaceData();
+        interfaceDiagram.setName(interfaceName);
+        interfaceDiagram.setX(x);  // Set X coordinate
+        interfaceDiagram.setY(y);
+
+        // Load Methods
+        NodeList methodNodes = interfaceElement.getElementsByTagName("Method");
+        for (int j = 0; j < methodNodes.getLength(); j++) {
+            Element methodElement = (Element) methodNodes.item(j);
+            MethodData method = new MethodData();
+            method.setAccessModifier(methodElement.getElementsByTagName("AccessModifier").item(0).getTextContent());
+            method.setReturnType(methodElement.getElementsByTagName("ReturnType").item(0).getTextContent());
+            method.setName(methodElement.getElementsByTagName("Name").item(0).getTextContent());
+            interfaceDiagram.getMethods().add(method);
+        }
+
+        return interfaceDiagram;
+    }
+
+    private Relationship loadRelationship(Element relationshipElement) {
+        // Extract standard relationship fields
+        String type = relationshipElement.getElementsByTagName("Type").item(0).getTextContent();
+        String sourceName = relationshipElement.getElementsByTagName("Source").item(0).getTextContent();
+        String targetName = relationshipElement.getElementsByTagName("Target").item(0).getTextContent();
+        String relationName = relationshipElement.getElementsByTagName("Name").item(0).getTextContent();
+
+        // Extract coordinates
+        double sourceX = Double.parseDouble(relationshipElement.getElementsByTagName("SourceX").item(0).getTextContent());
+        double sourceY = Double.parseDouble(relationshipElement.getElementsByTagName("SourceY").item(0).getTextContent());
+        double targetX = Double.parseDouble(relationshipElement.getElementsByTagName("TargetX").item(0).getTextContent());
+        double targetY = Double.parseDouble(relationshipElement.getElementsByTagName("TargetY").item(0).getTextContent());
+
+        // Extract multiplicities
+        String sourceMultiplicity = relationshipElement.getElementsByTagName("SourceMultiplicity").item(0).getTextContent();
+        String targetMultiplicity = relationshipElement.getElementsByTagName("TargetMultiplicity").item(0).getTextContent();
+
+        // Find source and target diagrams/interfaces
+        ClassDiagram source = findDiagramByName(sourceName);
+        ClassDiagram target = null;
+        InterfaceData targetInterface = null;
+
+        if (type.equals("Realization")) {
+            targetInterface = findInterfaceDiagramByName(targetName);
+        } else {
+            target = findDiagramByName(targetName);
+        }
+
+        // Create the relationship with multiplicities
+        Relationship relationship = new Relationship(source, target, type, sourceMultiplicity, targetMultiplicity, obstacles, relationName);
+
+        // Set coordinates
+        relationship.setStartX(sourceX); // Set SourceX
+        relationship.setStartY(sourceY); // Set SourceY
+        relationship.setEndX(targetX);   // Set TargetX
+        relationship.setEndY(targetY);   // Set TargetY
+
+        if (type.equals("Realization")) {
+            relationship.setTargetInterface(targetInterface);
+        }
+        return relationship;
+    }
+
+    private void addToRelationshipList(Relationship relationship) {
+        switch (relationship.getType()) {
+            case "association":
+                associations.add(relationship);
+                break;
+            case "aggregation":
+                aggregations.add(relationship);
+                break;
+            case "composition":
+                compositions.add(relationship);
+                break;
+            case "Realization":
+                realizations.add(relationship);
+                break;
+            case "Generalization":
+                generalizations.add(relationship);
+                break;
+        }
+    }
+
+
     private void showAlert(Alert.AlertType alertType, String title, String message) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
@@ -1815,6 +2132,7 @@ public class ClassDashboardController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
     @FXML
     private void handleExit() {
         Alert exitConfirmation = new Alert(Alert.AlertType.CONFIRMATION);

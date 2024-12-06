@@ -16,9 +16,15 @@ module org.example.craftuml {
     requires com.fasterxml.jackson.databind;
     requires org.apache.pdfbox;
     requires javafx.swing;
+    requires org.testng;
+
+    opens org.example.craftuml.models to org.mockito;
 
     opens org.example.craftuml to javafx.fxml;
     exports org.example.craftuml;
     exports org.example.craftuml.Service;
     opens org.example.craftuml.Service to javafx.fxml;
+    exports org.example.craftuml.UI;
+    opens org.example.craftuml.UI to javafx.fxml;
+    requires org.mockito;
 }
