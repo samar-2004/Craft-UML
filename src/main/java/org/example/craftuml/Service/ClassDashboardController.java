@@ -2159,18 +2159,60 @@ public class ClassDashboardController {
 
         if (file != null) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-                // Map to hold class names for checking associations
+                // Map to hold class names for checking relationships
                 Map<String, ClassDiagram> classMap = new HashMap<>();
-                for (ClassDiagram diagram : classDiagrams) {
-                    classMap.put(diagram.getName(), diagram);
+                classDiagrams.forEach(diagram -> classMap.put(diagram.getName(), diagram));
+
+                // Generate code for interfaces
+                for (InterfaceData interfaceDiagram : interfaceDiagrams) {
+                    StringBuilder interfaceCode = new StringBuilder();
+                    interfaceCode.append("public interface ").append(interfaceDiagram.getName()).append(" {\n\n");
+
+                    for (MethodData method : interfaceDiagram.getMethods()) {
+                        interfaceCode.append("    ")
+                                .append(mapAccessModifier(method.getAccessModifier()))
+                                .append(" ")
+                                .append(method.getReturnType())
+                                .append(" ")
+                                .append(method.getName())
+                                .append("();\n");
+                    }
+
+                    interfaceCode.append("}\n\n");
+                    writer.write(interfaceCode.toString());
                 }
 
-                for (ClassDiagram diagram : classDiagrams) {
+                // Generate code for classes
+                for (ClassDiagram classDiagram : classDiagrams) {
                     StringBuilder classCode = new StringBuilder();
+                    classCode.append("public class ").append(classDiagram.getName());
 
-                    classCode.append("public class ").append(diagram.getName()).append(" {\n\n");
+                    // Check for generalization (extends)
+                    Optional<String> parentClass = generalizations.stream()
+                            .filter(r -> r.getSourceClass() != null &&
+                                    r.getSourceClass().equals(classDiagram) &&
+                                    r.getTargetClass() != null)
+                            .map(r -> r.getTargetClass().getName())
+                            .findFirst();
+                    if (parentClass.isPresent()) {
+                        classCode.append(" extends ").append(parentClass.get());
+                    }
 
-                    for (AttributeData attribute : diagram.getAttributes()) {
+                    // Check for realizations (implements)
+                    List<String> implementedInterfaces = realizations.stream()
+                            .filter(r -> r.getSourceClass() != null &&
+                                    r.getSourceClass().equals(classDiagram) &&
+                                    r.getTargetInterface() != null)
+                            .map(r -> r.getTargetInterface().getName())
+                            .collect(Collectors.toList());
+                    if (!implementedInterfaces.isEmpty()) {
+                        classCode.append(" implements ").append(String.join(", ", implementedInterfaces));
+                    }
+
+                    classCode.append(" {\n\n");
+
+                    // Add attributes
+                    for (AttributeData attribute : classDiagram.getAttributes()) {
                         classCode.append("    ")
                                 .append(mapAccessModifier(attribute.getAccessModifier()))
                                 .append(" ")
@@ -2181,7 +2223,8 @@ public class ClassDashboardController {
                     }
                     classCode.append("\n");
 
-                    for (MethodData method : diagram.getMethods()) {
+                    // Add methods
+                    for (MethodData method : classDiagram.getMethods()) {
                         classCode.append("    ")
                                 .append(mapAccessModifier(method.getAccessModifier()))
                                 .append(" ")
@@ -2193,9 +2236,10 @@ public class ClassDashboardController {
                                 .append("    }\n\n");
                     }
 
-                    for (AttributeData attribute : diagram.getAttributes()) {
+                    // Add associations
+                    for (AttributeData attribute : classDiagram.getAttributes()) {
                         if (classMap.containsKey(attribute.getDataType())) {
-                            classCode.append("    // Association: ").append(diagram.getName())
+                            classCode.append("    // Association: ").append(classDiagram.getName())
                                     .append(" has a reference to ").append(attribute.getDataType()).append("\n");
                         }
                     }
