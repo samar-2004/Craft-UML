@@ -1959,7 +1959,6 @@ public class ClassDashboardController {
                 generalizations.clear();
                 redrawCanvas(); // Clear the canvas
 
-                // Load and parse the XML file
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder builder = factory.newDocumentBuilder();
                 Document document = builder.parse(file);
@@ -2174,15 +2173,13 @@ public class ClassDashboardController {
                                 .append(" ")
                                 .append(method.getReturnType())
                                 .append(" ")
-                                .append(method.getName())
-                                .append("();\n");
+                                .append(method.getName());
                     }
 
-                    interfaceCode.append("}\n\n");
+                    interfaceCode.append("\n}\n\n");
                     writer.write(interfaceCode.toString());
                 }
 
-                // Generate code for classes
                 for (ClassDiagram classDiagram : classDiagrams) {
                     StringBuilder classCode = new StringBuilder();
                     classCode.append("public class ").append(classDiagram.getName());
@@ -2223,6 +2220,10 @@ public class ClassDashboardController {
                     }
                     classCode.append("\n");
 
+                    classCode.append("\n    public ").append(classDiagram.getName()).append("() {\n")
+                            .append("        // Default constructor\n")
+                            .append("    }\n\n");
+
                     // Add methods
                     for (MethodData method : classDiagram.getMethods()) {
                         classCode.append("    ")
@@ -2231,7 +2232,7 @@ public class ClassDashboardController {
                                 .append(method.getReturnType())
                                 .append(" ")
                                 .append(method.getName())
-                                .append("() {\n")
+                                .append(" {\n")
                                 .append("        // TODO: Add method implementation\n")
                                 .append("    }\n\n");
                     }
@@ -2258,11 +2259,11 @@ public class ClassDashboardController {
 
     private String mapAccessModifier(String accessModifier) {
         switch (accessModifier) {
-            case "private":
+            case "-":
                 return "private";
-            case "protected":
+            case "#":
                 return "protected";
-            case "public":
+            case "+":
                 return "public";
             default:
                 return ""; // Default to package-private
