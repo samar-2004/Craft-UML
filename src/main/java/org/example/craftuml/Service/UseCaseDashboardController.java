@@ -210,7 +210,7 @@ public class UseCaseDashboardController {
         }
     }
 
-    private void handleUseCaseDiagram() {
+    public void handleUseCaseDiagram() {
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("New Use Case Diagram");
         dialog.setHeaderText("Enter Diagram Name: ");
@@ -317,10 +317,12 @@ public class UseCaseDashboardController {
         {
             drawAssociationLine(association.getActor(),association.getUseCase());
         }
-        for (UseCaseToUseCaseRelation include : includeRelations){
+        for (UseCaseToUseCaseRelation include : includeRelations)
+        {
             drawUseCaseRelation(include.getUseCase1(),include.getUseCase2(),include.getRelationType());
         }
-        for (UseCaseToUseCaseRelation extend : extendRelations){
+        for (UseCaseToUseCaseRelation extend : extendRelations)
+        {
             drawUseCaseRelation(extend.getUseCase1(),extend.getUseCase2(),extend.getRelationType());
         }
 
@@ -452,81 +454,6 @@ public class UseCaseDashboardController {
         gc.setFill(Color.BLACK);  // Fill color for the name text
         gc.fillText(actor.getName(), actor.getX() + 5, actor.getY() + headSize + bodyHeight + legLength + 10);  // Name below the actor
     }
-//    private void enableActorDrag(Actor actor) {
-//        // Set cursor to move when mouse hovers over the actor
-//        drawingCanvas.setOnMouseMoved(event -> {
-//            if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
-//                    event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
-//                drawingCanvas.setCursor(Cursor.MOVE);  // Change cursor to move symbol
-//            } else {
-//                drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when not hovering over the actor
-//            }
-//        });
-//
-//        // Reset previous event handlers to avoid overwriting issues
-//        drawingCanvas.setOnMousePressed(event -> {
-//            // Check if the mouse is inside the actor area
-//            if (event.getX() >= actor.getX() && event.getX() <= actor.getX() + actor.getWidth() &&
-//                    event.getY() >= actor.getY() && event.getY() <= actor.getY() + actor.getHeight()) {
-//                actor.setDragOffsetX(event.getX() - actor.getX()); // Store the offset during drag
-//                actor.setDragOffsetY(event.getY() - actor.getY());
-//            }
-//        });
-//
-//        drawingCanvas.setOnMouseDragged(event -> {
-//            if (actor.getDragOffsetX() != 0 && actor.getDragOffsetY() != 0) {
-//                // Calculate new position of the actor based on mouse movement
-//                double newX = event.getX() - actor.getDragOffsetX();
-//                double newY = event.getY() - actor.getDragOffsetY();
-//
-//                // Update position with constraints if necessary
-//                actor.setX(newX);
-//                actor.setY(newY);
-//
-//                redrawCanvas();
-//            }
-//        });
-//
-//        drawingCanvas.setOnMouseReleased(event -> {
-//            actor.setDragOffsetX(0);  // Reset drag offset when dragging stops
-//            actor.setDragOffsetY(0);
-//            drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when drag ends
-//        });
-//    }
-
-//    private void enableActorNameEdit() {
-//        drawingCanvas.setOnMouseClicked(event -> {
-//            if (event.getClickCount() == 2) { // Detect double-click
-//                double clickX = event.getX();
-//                double clickY = event.getY();
-//
-//                // Use an array as a mutable wrapper for the clicked actor
-//                final Actor[] clickedActorHolder = {null};
-//
-//                for (Actor actor : actors) {
-//                    if (clickX >= actor.getX() && clickX <= actor.getX() + 30 &&
-//                            clickY >= actor.getY() && clickY <= actor.getY() + 90) {
-//                        clickedActorHolder[0] = actor;
-//                        break;
-//                    }
-//                }
-//
-//                if (clickedActorHolder[0] != null) {
-//                    // Show dialog to edit actor name
-//                    TextInputDialog dialog = new TextInputDialog(clickedActorHolder[0].getName());
-//                    dialog.setTitle("Edit Actor Name");
-//                    dialog.setHeaderText("Edit the name of the selected actor");
-//                    dialog.setContentText("Name:");
-//
-//                    Optional<String> result = dialog.showAndWait();
-//                    result.ifPresent(newName -> {
-//                        clickedActorHolder[0].setName(newName); // Update actor's name
-//                        redrawCanvas(); // Refresh the canvas to show the updated name
-//                    });
-//                }
-//            }
-//        });
-//    }
 
     @FXML
     private void handleAddUseCase() {
@@ -719,130 +646,6 @@ public class UseCaseDashboardController {
         });
     }
 
-//    private void enableUseCaseDrag(UseCase useCase) {
-//        // Change cursor to move symbol when hovering over the use case
-//        drawingCanvas.setOnMouseMoved(event -> {
-//            if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
-//                    event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
-//                drawingCanvas.setCursor(Cursor.MOVE);  // Change cursor to move symbol
-//            } else {
-//                drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when not hovering over the use case
-//            }
-//        });
-//
-//        // Reset previous event handlers to avoid overwriting issues
-//        drawingCanvas.setOnMousePressed(event -> {
-//            // Check if the mouse is inside the use case area
-//            if (event.getX() >= useCase.getX() && event.getX() <= useCase.getX() + useCase.getWidth() &&
-//                    event.getY() >= useCase.getY() && event.getY() <= useCase.getY() + useCase.getHeight()) {
-//                useCase.setDragOffsetX(event.getX() - useCase.getX()); // Store the offset during drag
-//                useCase.setDragOffsetY(event.getY() - useCase.getY());
-//            }
-//        });
-//
-//        drawingCanvas.setOnMouseDragged(event -> {
-//            if (useCase.getDragOffsetX() != 0 && useCase.getDragOffsetY() != 0) {
-//                // Calculate new position of the use case based on mouse movement
-//                double newX = event.getX() - useCase.getDragOffsetX();
-//                double newY = event.getY() - useCase.getDragOffsetY();
-//
-//                // Keep the use case inside the active diagram bounds
-//                double minX = activeDiagram.getX() + 10;
-//                double minY = activeDiagram.getY() + 10;
-//                double maxX = activeDiagram.getX() + activeDiagram.getWidth() - useCase.getWidth() - 10;
-//                double maxY = activeDiagram.getY() + activeDiagram.getHeight() - useCase.getHeight() - 10;
-//
-//                // Update position with constraints
-//                useCase.setX(Math.max(minX, Math.min(newX, maxX)));
-//                useCase.setY(Math.max(minY, Math.min(newY, maxY)));
-//
-//                redrawCanvas();
-//            }
-//        });
-//
-//        drawingCanvas.setOnMouseReleased(event -> {
-//            useCase.setDragOffsetX(0);  // Reset drag offset when dragging stops
-//            useCase.setDragOffsetY(0);
-//            drawingCanvas.setCursor(Cursor.DEFAULT);  // Reset cursor when drag ends
-//        });
-//    }
-
-//    private void enableUseCaseNameEdit() {
-//        // Right-click context menu for Edit and Delete
-//        drawingCanvas.setOnMousePressed(event -> {
-//            if (event.isSecondaryButtonDown()) { // Right-click detection
-//                double clickX = event.getX();
-//                double clickY = event.getY();
-//
-//                final UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
-//
-//                if (clickedUseCase != null) {
-//                    // Create the context menu
-//                    ContextMenu contextMenu = new ContextMenu();
-//
-//                    // Edit option
-//                    MenuItem editItem = new MenuItem("Edit");
-//                    editItem.setOnAction(e -> {
-//                        TextInputDialog dialog = new TextInputDialog(clickedUseCase.getName());
-//                        dialog.setTitle("Edit Use Case Name");
-//                        dialog.setHeaderText("Edit the name of the selected use case");
-//                        dialog.setContentText("Name:");
-//
-//                        Optional<String> result = dialog.showAndWait();
-//                        result.ifPresent(newName -> {
-//                            clickedUseCase.setName(newName);
-//                            redrawCanvas();
-//                        });
-//                    });
-//
-//                    // Delete option
-//                    MenuItem deleteItem = new MenuItem("Delete");
-//                    deleteItem.setOnAction(e -> {
-//                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-//                        alert.setTitle("Delete Use Case");
-//                        alert.setHeaderText("Are you sure you want to delete this use case?");
-//                        alert.setContentText("This action cannot be undone.");
-//
-//                        Optional<ButtonType> confirmation = alert.showAndWait();
-//                        if (confirmation.isPresent() && confirmation.get() == ButtonType.OK) {
-//                            deleteUseCase(clickedUseCase);
-//                            redrawCanvas();
-//                        }
-//                    });
-//
-//                    contextMenu.getItems().addAll(editItem, deleteItem);
-//                    contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
-//
-//                    event.consume(); // Prevent right-click from also being interpreted as double-click
-//                }
-//            }
-//        });
-//
-//        // Handle double-click to edit name
-//        drawingCanvas.setOnMouseClicked(event -> {
-//            if (event.getClickCount() == 2) { // Double-click detection
-//                double clickX = event.getX();
-//                double clickY = event.getY();
-//
-//                final UseCase clickedUseCase = findClickedUseCase(clickX, clickY);
-//
-//                if (clickedUseCase != null) {
-//                    // Show dialog to edit use case name
-//                    TextInputDialog dialog = new TextInputDialog(clickedUseCase.getName());
-//                    dialog.setTitle("Edit Use Case Name");
-//                    dialog.setHeaderText("Edit the name of the selected use case");
-//                    dialog.setContentText("Name:");
-//
-//                    Optional<String> result = dialog.showAndWait();
-//                    result.ifPresent(newName -> {
-//                        clickedUseCase.setName(newName);
-//                        redrawCanvas();
-//                    });
-//                }
-//            }
-//        });
-//    }
-
     private void enableNameEdit() {
         drawingCanvas.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) { // Detect double-click
@@ -986,15 +789,6 @@ public class UseCaseDashboardController {
         alert.showAndWait();
     }
 
-//    private UseCase findClickedUseCase(double clickX, double clickY) {
-//        for (UseCase useCase : useCases) {
-//            if (clickX >= useCase.getX() && clickX <= useCase.getX() + 150 &&
-//                    clickY >= useCase.getY() && clickY <= useCase.getY() + 60) {
-//                return useCase;
-//            }
-//        }
-//        return null;
-//    }
 
     private void deleteUseCase(UseCase useCase) {
         useCases.remove(useCase);
@@ -1015,66 +809,42 @@ public class UseCaseDashboardController {
         );
     }
 
+
     private void drawUseCase(UseCase useCase) {
-        GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
-        String name = useCase.getName();
+    GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
+    String name = useCase.getName();
 
-        // Set font
-        gc.setFont(new Font("Arial", 14));
-        Text textHelper = new Text();
-        textHelper.setFont(gc.getFont());
+    // Set font for drawing text
+    gc.setFont(new Font("Arial", 14));
+    Text textHelper = new Text();
+    textHelper.setFont(gc.getFont());
 
-        double maxWidth = 100; // Maximum width for wrapping text
+    // Calculate the text width and height
+    textHelper.setText(name);
+    double textWidth = textHelper.getBoundsInLocal().getWidth();
+    double textHeight = textHelper.getBoundsInLocal().getHeight();
 
-        // Split text into wrapped lines
-        List<String> lines = new ArrayList<>();
-        String[] words = name.split(" ");
-        StringBuilder currentLine = new StringBuilder();
+    // Set max width for the oval
+    //double maxWidth = 50;  // Adjust width if needed
 
-        for (String word : words) {
-            String testLine = currentLine + (currentLine.length() > 0 ? " " : "") + word;
-            textHelper.setText(testLine);
-            if (textHelper.getBoundsInLocal().getWidth() <= maxWidth) {
-                currentLine.append((currentLine.length() > 0 ? " " : "")).append(word);
-            } else {
-                lines.add(currentLine.toString());
-                currentLine = new StringBuilder(word);
-            }
-        }
-        if (currentLine.length() > 0) {
-            lines.add(currentLine.toString());
-        }
+    // Calculate the oval dimensions
+    double ovalWidth = Math.max(0, textWidth + 30); // Add padding
+    double ovalHeight = Math.max(50, textHeight + 10); // Add padding
 
-        // Calculate dimensions
-        double textHeight = textHelper.getBoundsInLocal().getHeight();
-        double ovalWidth = Math.max(maxWidth + 50, lines.stream()
-                .mapToDouble(line -> {
-                    textHelper.setText(line);
-                    return textHelper.getBoundsInLocal().getWidth();
-                }).max().orElse(0) + 20); // Add padding
-        double ovalHeight = Math.max(50, textHeight * lines.size() + 20); // Add padding
+    // Draw the oval
+    gc.setFill(Color.WHITE);
+    gc.fillOval(useCase.getX(), useCase.getY(), ovalWidth, ovalHeight);
+    gc.setStroke(Color.BLACK);
+    gc.strokeOval(useCase.getX(), useCase.getY(), ovalWidth, ovalHeight);
 
-        // Draw the oval
-        gc.setFill(Color.WHITE);
-        gc.fillOval(useCase.getX(), useCase.getY(), ovalWidth, ovalHeight);
-        gc.setStroke(Color.BLACK);
-        gc.strokeOval(useCase.getX(), useCase.getY(), ovalWidth, ovalHeight);
+    // Center text in the oval
+    gc.setFill(Color.BLACK);
+    double centerX = useCase.getX() + ovalWidth / 2 + textWidth / 2;
+    double centerY = useCase.getY() + ovalHeight / 2.5;
 
-        // Center text in the oval
-        gc.setFill(Color.BLACK);
-        double centerX = useCase.getX() + ovalWidth / 2;
-        double totalTextHeight = textHeight * lines.size();
-        double centerY = useCase.getY() + (ovalHeight - totalTextHeight) / 2 + textHeight;
-
-        // Draw each line of text
-        for (int i = 0; i < lines.size(); i++) {
-            textHelper.setText(lines.get(i));
-            double lineWidth = textHelper.getBoundsInLocal().getWidth();
-            double startX = centerX - lineWidth / 2;
-            double startY = centerY + i * textHeight;  // Adjust vertical position for each line
-            gc.fillText(lines.get(i), startX, startY);
-        }
-    }
+    // Draw the text centered in the oval
+    gc.fillText(name, centerX - textWidth / 2, centerY);
+}
 
     @FXML
     private void handleAddAssociation() {
@@ -1231,13 +1001,15 @@ public class UseCaseDashboardController {
         // Calculate the nearest point on actor's boundary
         Point2D actorBoundaryPoint = getNearestBoundaryPoint(
                 actor.getX(), actor.getY(), actor.getWidth(), actor.getHeight(),
-                useCaseCenterX, useCaseCenterY
+                useCaseCenterX, useCaseCenterY,
+                false // Not an ellipse
         );
 
         // Calculate the nearest point on use case's boundary
         Point2D useCaseBoundaryPoint = getNearestBoundaryPoint(
                 useCase.getX(), useCase.getY(), useCase.getWidth(), useCase.getHeight(),
-                actorCenterX, actorCenterY
+                actorCenterX, actorCenterY,
+                true // Is an ellipse
         );
 
         // Draw the line between the calculated boundary points
@@ -1245,50 +1017,55 @@ public class UseCaseDashboardController {
                 useCaseBoundaryPoint.getX(), useCaseBoundaryPoint.getY());
     }
 
-    /**
-     * Calculates the nearest point on the rectangle's boundary to the given point.
-     * @param rectX      Top-left X of the rectangle.
-     * @param rectY      Top-left Y of the rectangle.
-     * @param rectWidth  Width of the rectangle.
-     * @param rectHeight Height of the rectangle.
-     * @param pointX     X-coordinate of the external point.
-     * @param pointY     Y-coordinate of the external point.
-     * @return The nearest point on the rectangle's boundary.
-     */
-    private Point2D getNearestBoundaryPoint(double rectX, double rectY, double rectWidth, double rectHeight,
-                                            double pointX, double pointY) {
-        // Calculate the rectangle's center
-        double centerX = rectX + rectWidth / 2;
-        double centerY = rectY + rectHeight / 2;
 
-        // Calculate the deltas
-        double dx = pointX - centerX;
-        double dy = pointY - centerY;
+    private Point2D getNearestBoundaryPoint(double x, double y, double width, double height, double targetX, double targetY, boolean isEllipse) {
+        if (isEllipse) {
+            // For ellipses
+            double a = width / 2.0;  // Horizontal radius
+            double b = height / 2.0; // Vertical radius
 
-        // Determine which side of the rectangle to snap to
-        double absDx = Math.abs(dx);
-        double absDy = Math.abs(dy);
+            // Center of the ellipse
+            double xCenter = x + a;
+            double yCenter = y + b;
 
-        if (absDx > absDy) {
-            // Closer to the left or right side
-            if (dx > 0) {
-                // Right side
-                return new Point2D(rectX + 1.5 * rectWidth, centerY + dy * (rectWidth / 2) / absDx);
-            } else {
-                // Left side
-                return new Point2D(rectX, centerY + dy * (rectWidth / 2) / absDx);
-            }
+            // Translate target to ellipse's local coordinate system
+            double dx = targetX - xCenter;
+            double dy = targetY - yCenter;
+
+            // Normalize the direction vector
+            double magnitude = Math.sqrt(dx * dx + dy * dy);
+            double nx = dx / magnitude;
+            double ny = dy / magnitude;
+
+            // Scale by ellipse radii
+            double boundaryX = xCenter + a * nx;
+            double boundaryY = yCenter + b * ny;
+
+            return new Point2D(boundaryX - 8, boundaryY);
         } else {
-            // Closer to the top or bottom side
-            if (dy > 0) {
-                // Bottom side
-                return new Point2D(centerX + dx * (rectHeight / 2) / absDy, rectY + rectHeight);
-            } else {
-                // Top side
-                return new Point2D(centerX + dx * (rectHeight / 2) / absDy, rectY);
-            }
+            // For rectangles
+            double rectCenterX = x + width / 2.0;
+            double rectCenterY = y + height / 2.0;
+
+            // Calculate the direction vector
+            double dx = targetX - rectCenterX;
+            double dy = targetY - rectCenterY;
+
+            // Normalize the direction vector
+            double absDx = Math.abs(dx);
+            double absDy = Math.abs(dy);
+
+            // Find scale factor to bring point to boundary
+            double scale = (absDx / width > absDy / height) ? width / 2.0 / absDx : height / 2.0 / absDy;
+
+            // Scale the vector to the boundary
+            double boundaryX = rectCenterX + dx * scale;
+            double boundaryY = rectCenterY + dy * scale;
+
+            return new Point2D(boundaryX, boundaryY);
         }
     }
+
 
     private boolean isUseCaseAssociated(UseCase useCase, Actor actor) {
         // Check if the actor is already associated with the use case
@@ -1504,12 +1281,14 @@ public class UseCaseDashboardController {
         // Nearest boundary points
         Point2D start = getNearestBoundaryPoint(
                 useCase1.getX(), useCase1.getY(), useCase1.getWidth(), useCase1.getHeight(),
-                useCase2CenterX, useCase2CenterY
+                useCase2CenterX, useCase2CenterY,
+                true // Use case is elliptical
         );
 
         Point2D end = getNearestBoundaryPoint(
                 useCase2.getX(), useCase2.getY(), useCase2.getWidth(), useCase2.getHeight(),
-                useCase1CenterX, useCase1CenterY
+                useCase1CenterX, useCase1CenterY,
+                true // Use case is elliptical
         );
 
         // Draw dotted line
