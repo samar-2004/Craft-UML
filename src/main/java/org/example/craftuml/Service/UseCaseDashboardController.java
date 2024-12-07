@@ -60,7 +60,6 @@ public class UseCaseDashboardController {
     private UseCase draggingUseCase = null;
     @FXML
     public void initialize() {
-
         initializeResizeHandlers();
     }
 
