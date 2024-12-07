@@ -1,5 +1,7 @@
 package org.example.craftuml.models;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -15,13 +17,14 @@ public class Relationship {
     private ClassDiagram sourceClass;
     private ClassDiagram targetClass;
     private InterfaceData targetInterface;
-    private String type; // "association", "composition", "aggregation","Realization"
+    public String type; // "association", "composition", "aggregation","Realization"
     private String sourceClassMultiplicity;
     private String targetClassMultiplicity;
     private String relationName;
     private static final double OFFSET = 50.0;
     private List<Rectangle> obstacles = new ArrayList<>();
     double startX,startY,endX,endY;
+    private final StringProperty relationNameProperty = new SimpleStringProperty();
 
     public Relationship(ClassDiagram sourceClass, ClassDiagram targetClass, String type, String sourceClassMultiplicity, String targetClassMultiplicity,List<Rectangle> obstacles,String relationName) {
         this.sourceClass = sourceClass;
@@ -31,6 +34,7 @@ public class Relationship {
         this.targetClassMultiplicity = targetClassMultiplicity;
         this.obstacles=obstacles;
         this.relationName = relationName;
+        this.relationNameProperty.set(type);
     }
     public Relationship(ClassDiagram sourceClass, InterfaceData targetInterface, String type, String sourceClassMultiplicity, String targetClassMultiplicity, List<Rectangle> obstacles) {
         this.sourceClass = sourceClass;
@@ -39,8 +43,19 @@ public class Relationship {
         this.sourceClassMultiplicity = sourceClassMultiplicity;
         this.targetClassMultiplicity = targetClassMultiplicity;
         this.obstacles=obstacles;
+        this.relationNameProperty.set(type);
     }
 
+    public String getRelationType() {
+        return relationNameProperty.get();
+    }
+
+    public void setRelationType(String relationName) {
+        this.relationNameProperty.set(relationName);
+    }
+    public StringProperty relationNameProperty() {
+        return relationNameProperty;
+    }
     public void draw(GraphicsContext gc)
     {
         double x1 = sourceClass.getX();
@@ -151,6 +166,108 @@ public class Relationship {
     }
 
 
+
+    public void drawRealization(GraphicsContext gc)
+    {
+        double[] originalDashes = gc.getLineDashes();
+
+        double x1 = sourceClass.getX();
+        double y1 = sourceClass.getY();
+        double x2 = targetInterface.getX();
+        double y2 = targetInterface.getY();
+
+        double sourceClassWidth = sourceClass.getWidth();
+        double sourceClassHeight = sourceClass.getHeight();
+        double targetInterfaceWidth = targetInterface.getWidth();
+        double targetInterfaceHeight = targetInterface.getHeight();
+
+        double[] adjustedSourceClass = calculateOrthogonalBorderIntersection(
+                x1, y1, sourceClassWidth, sourceClassHeight, x1, y1, x2, y2
+        );
+        double[] adjustedTargetInterface = calculateOrthogonalBorderIntersection(
+                x2, y2, targetInterfaceWidth, targetInterfaceHeight, x2, y2, x1, y1
+        );
+        double adjX1 = adjustedSourceClass[0];
+        double adjY1 = adjustedSourceClass[1];
+        double adjX2 = adjustedTargetInterface[0];
+        double adjY2 = adjustedTargetInterface[1];
+
+        startX = adjX1;
+        startY = adjY1;
+        endX = adjX2;
+        endY = adjY2;
+
+        gc.setLineWidth(2);
+
+
+        gc.setLineDashes(10, 5);
+
+        gc.setStroke(Color.BLACK);
+
+        double arrowLength = 15.0;
+        double angle = Math.atan2(adjY2 - adjY1, adjX2 - adjX1);
+
+        double stopX = adjX2 - arrowLength * Math.cos(angle);
+        double stopY = adjY2 - arrowLength * Math.sin(angle);
+
+        gc.setStroke(Color.BLACK);
+
+        gc.strokeLine(adjX1, adjY1, stopX, stopY);
+
+        gc.setLineDashes(originalDashes);
+        drawEmptyArrowhead(gc, stopX, stopY, adjX2, adjY2);
+    }
+
+
+    public void drawGeneralization(GraphicsContext gc)
+    {
+        double[] originalDashes = gc.getLineDashes();
+
+        double x1 = sourceClass.getX();
+        double y1 = sourceClass.getY();
+        double x2 = targetClass.getX();
+        double y2 = targetClass.getY();
+
+        double sourceClassWidth = sourceClass.getWidth();
+        double sourceClassHeight = sourceClass.getHeight();
+        double targetInterfaceWidth = targetClass.getWidth();
+        double targetInterfaceHeight = targetClass.getHeight();
+
+        double[] adjustedSourceClass = calculateOrthogonalBorderIntersection(
+                x1, y1, sourceClassWidth, sourceClassHeight, x1, y1, x2, y2
+        );
+        double[] adjustedTargetInterface = calculateOrthogonalBorderIntersection(
+                x2, y2, targetInterfaceWidth, targetInterfaceHeight, x2, y2, x1, y1
+        );
+        double adjX1 = adjustedSourceClass[0];
+        double adjY1 = adjustedSourceClass[1];
+        double adjX2 = adjustedTargetInterface[0];
+        double adjY2 = adjustedTargetInterface[1];
+
+        startX = adjX1;
+        startY = adjY1;
+        endX = adjX2;
+        endY = adjY2;
+
+        gc.setLineWidth(2);
+
+        double arrowLength = 15.0;
+        double angle = Math.atan2(adjY2 - adjY1, adjX2 - adjX1);
+
+        double stopX = adjX2 - arrowLength * Math.cos(angle);
+        double stopY = adjY2 - arrowLength * Math.sin(angle);
+
+        // Draw the dashed line from source to the point before the arrowhead
+        gc.setStroke(Color.BLACK);
+
+        gc.strokeLine(adjX1, adjY1, stopX, stopY);
+
+        gc.setLineDashes(originalDashes);
+        // Draw the solid arrowhead
+        drawEmptyArrowhead(gc, stopX, stopY, adjX2, adjY2);
+    }
+
+
     private void drawEmptyArrowhead(GraphicsContext gc, double x1, double y1, double x2, double y2)
     {
         double angle = Math.atan2(y2 - y1, x2 - x1);
@@ -210,7 +327,7 @@ public class Relationship {
 
 
 
-    private double[] calculateOrthogonalBorderIntersection(
+    public double[] calculateOrthogonalBorderIntersection(
             double rectX, double rectY, double rectWidth, double rectHeight,
             double sourceX, double sourceY, double targetX, double targetY) {
 
@@ -332,7 +449,6 @@ public class Relationship {
         return endY;
     }
 
-
     public void setSourceClass(ClassDiagram sourceClass) {
         this.sourceClass = sourceClass;
     }
@@ -396,69 +512,7 @@ public class Relationship {
     public String getType() {
         return type;
     }
-    public void drawAssociation(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
 
-    public void drawAggregation(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        // Draw diamond at the source end
-        drawDiamond(gc, sourceClass.getX(), sourceClass.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
-
-    public void drawComposition(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        // Draw filled diamond at the source end
-        drawFilledDiamond(gc, sourceClass.getX(), sourceClass.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
-
-    public void drawGeneralization(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        // Draw open arrow at the target end
-        drawArrow(gc, targetClass.getX(), targetClass.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetClass.getX(), targetClass.getY());
-    }
-
-    public void drawRealization(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setLineDashes(4);
-        gc.setLineWidth(1);
-        // Draw open arrow at the target end
-        drawArrow(gc, targetInterface.getX(), targetInterface.getY());
-        gc.strokeLine(sourceClass.getX(), sourceClass.getY(), targetInterface.getX(), targetInterface.getY());
-        gc.setLineDashes(0); // Reset dashes
-    }
-
-    private void drawDiamond(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.WHITE);
-        gc.setStroke(Color.BLACK);
-        double[] xPoints = {x, x - 10, x, x + 10};
-        double[] yPoints = {y, y + 10, y + 20, y + 10};
-        gc.strokePolygon(xPoints, yPoints, 4);
-    }
-
-    private void drawFilledDiamond(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.BLACK);
-        gc.setStroke(Color.BLACK);
-        double[] xPoints = {x, x - 10, x, x + 10};
-        double[] yPoints = {y, y + 10, y + 20, y + 10};
-        gc.fillPolygon(xPoints, yPoints, 4);
-    }
-
-    private void drawArrow(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.WHITE);
-        gc.setStroke(Color.BLACK);
-        double[] xPoints = {x, x - 10, x + 10};
-        double[] yPoints = {y, y - 20, y - 20};
-        gc.strokePolygon(xPoints, yPoints, 3);
-    }
 }
 
 

@@ -9,7 +9,7 @@
 <stylesheets>
     <URL value="@chooseDiagram.css"/>
 </stylesheets>
-<Label text="Choose Diagram Type" styleClass="label"/>
+<Label text="SELECT DIAGRAM TYPE" styleClass="label"/>
 <VBox alignment="CENTER" spacing="30">
     <Button text="Class Diagram" fx:id="classButton" styleClass="button"/>
     <Button text="Use Case Diagram" fx:id="useCaseButton" styleClass="button"/>

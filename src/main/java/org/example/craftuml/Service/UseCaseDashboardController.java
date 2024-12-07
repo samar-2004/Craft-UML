@@ -2,30 +2,51 @@ package org.example.craftuml.Service;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
-import javafx.geometry.Point2D;
-import javafx.geometry.VPos;
+import javafx.geometry.*;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.example.craftuml.models.UseCaseDiagrams.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
+
+import javax.imageio.ImageIO;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 
 public class UseCaseDashboardController {
 
@@ -60,6 +81,7 @@ public class UseCaseDashboardController {
     private UseCase draggingUseCase = null;
     @FXML
     public void initialize() {
+
         initializeResizeHandlers();
     }
 
@@ -1336,16 +1358,227 @@ public class UseCaseDashboardController {
     }
 
     // Open an existing project (Placeholder method)
-    public void handleOpenProject() {
-        System.out.println("Opening project...");
-        // Logic to open an existing project
+    public void handleOpenProject() { FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Use Case Diagram");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+        File file = fileChooser.showOpenDialog(drawingCanvas.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                Document doc = docBuilder.parse(file);
+
+                // Clear existing data
+                actors.clear();
+                useCases.clear();
+                associations.clear();
+                includeRelations.clear();
+                extendRelations.clear();
+
+                // Load the diagram
+                NodeList diagramNodes = doc.getElementsByTagName("UseCaseDiagram");
+                if (diagramNodes.getLength() > 0) {
+                    Element diagramElement = (Element) diagramNodes.item(0);
+                    activeDiagram = new UseCaseDiagram();
+                    activeDiagram.setName(diagramElement.getAttribute("name"));
+                    activeDiagram.setX(Double.parseDouble(diagramElement.getAttribute("x")));
+                    activeDiagram.setY(Double.parseDouble(diagramElement.getAttribute("y")));
+                    activeDiagram.setWidth(Double.parseDouble(diagramElement.getAttribute("width")));
+                    activeDiagram.setHeight(Double.parseDouble(diagramElement.getAttribute("height")));
+                }
+
+                // Load actors
+                NodeList actorNodes = doc.getElementsByTagName("Actor");
+                for (int i = 0; i < actorNodes.getLength(); i++) {
+                    Element actorElement = (Element) actorNodes.item(i);
+                    Actor actor = new Actor(actorElement.getAttribute("name"));
+                    actor.setX(Double.parseDouble(actorElement.getAttribute("x")));
+                    actor.setY(Double.parseDouble(actorElement.getAttribute("y")));
+                    actors.add(actor);
+                }
+
+                // Load use cases
+                NodeList useCaseNodes = doc.getElementsByTagName("UseCase");
+                for (int i = 0; i < useCaseNodes.getLength(); i++) {
+                    Element useCaseElement = (Element) useCaseNodes.item(i);
+                    UseCase useCase = new UseCase(useCaseElement.getAttribute("name"));
+                    useCase.setX(Double.parseDouble(useCaseElement.getAttribute("x")));
+                    useCase.setY(Double.parseDouble(useCaseElement.getAttribute("y")));
+                    useCases.add(useCase);
+                }
+
+                // Load associations
+                NodeList associationNodes = doc.getElementsByTagName("Association");
+                for (int i = 0; i < associationNodes.getLength(); i++) {
+                    Element associationElement = (Element) associationNodes.item(i);
+                    String actorName = associationElement.getAttribute("actor");
+                    String useCaseName = associationElement.getAttribute("useCase");
+
+                    Actor actor = findActorByName(actorName);
+                    UseCase useCase = findUseCaseByName(useCaseName);
+
+                    if (actor != null && useCase != null) {
+                        associations.add(new Association(actor, useCase));
+                    }
+                }
+
+                // Load include and extend relationships
+                NodeList relationNodes = doc.getElementsByTagName("Relationships").item(0).getChildNodes();
+                for (int i = 0; i < relationNodes.getLength(); i++) {
+                    if (relationNodes.item(i) instanceof Element) {
+                        Element relationElement = (Element) relationNodes.item(i);
+                        String from = relationElement.getAttribute("from");
+                        String to = relationElement.getAttribute("to");
+
+                        UseCase fromUseCase = findUseCaseByName(from);
+                        UseCase toUseCase = findUseCaseByName(to);
+
+                        if (fromUseCase != null && toUseCase != null) {
+                            if ("Include".equals(relationElement.getTagName())) {
+                                includeRelations.add(new UseCaseToUseCaseRelation(fromUseCase, toUseCase, "include"));
+                            } else if ("Extend".equals(relationElement.getTagName())) {
+                                extendRelations.add(new UseCaseToUseCaseRelation(fromUseCase, toUseCase, "extend"));
+                            }
+                        }
+                    }
+                }
+
+                // Enable dragging for loaded elements
+
+                  enableDragging();
+
+
+
+
+
+                // Redraw canvas
+                redrawCanvas();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Open Error");
+                alert.setHeaderText("An error occurred while opening the file.");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        }
+    }
+    private Actor findActorByName(String name) {
+        for (Actor actor : actors) {
+            if (actor.getName().equals(name)) {
+                return actor;
+            }
+        }
+        return null;
     }
 
-    // Save current project (Placeholder method)
-    public void handleSaveProject() {
-        System.out.println("Saving project...");
-        // Logic to save the current project
+    private UseCase findUseCaseByName(String name) {
+        for (UseCase useCase : useCases) {
+            if (useCase.getName().equals(name)) {
+                return useCase;
+            }
+        }
+        return null;
     }
+    @FXML
+    public void handleSaveProject() {  if (activeDiagram == null) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("No Diagram to Save");
+        alert.setHeaderText("There is no active use case diagram to save.");
+        alert.showAndWait();
+        return;
+    }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Use Case Diagram");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+        File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                // Create XML document
+                DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                Document doc = docBuilder.newDocument();
+
+                // Root element
+                Element rootElement = doc.createElement("UseCaseDiagram");
+                rootElement.setAttribute("name", activeDiagram.getName());
+                rootElement.setAttribute("x", String.valueOf(activeDiagram.getX()));
+                rootElement.setAttribute("y", String.valueOf(activeDiagram.getY()));
+                rootElement.setAttribute("width", String.valueOf(activeDiagram.getWidth()));
+                rootElement.setAttribute("height", String.valueOf(activeDiagram.getHeight()));
+                doc.appendChild(rootElement);
+
+                // Save actors
+                Element actorsElement = doc.createElement("Actors");
+                for (Actor actor : actors) {
+                    Element actorElement = doc.createElement("Actor");
+                    actorElement.setAttribute("name", actor.getName());
+                    actorElement.setAttribute("x", String.valueOf(actor.getX()));
+                    actorElement.setAttribute("y", String.valueOf(actor.getY()));
+                    actorsElement.appendChild(actorElement);
+                }
+                rootElement.appendChild(actorsElement);
+
+                // Save use cases
+                Element useCasesElement = doc.createElement("UseCases");
+                for (UseCase useCase : useCases) {
+                    Element useCaseElement = doc.createElement("UseCase");
+                    useCaseElement.setAttribute("name", useCase.getName());
+                    useCaseElement.setAttribute("x", String.valueOf(useCase.getX()));
+                    useCaseElement.setAttribute("y", String.valueOf(useCase.getY()));
+                    useCasesElement.appendChild(useCaseElement);
+                }
+                rootElement.appendChild(useCasesElement);
+
+                // Save associations
+                Element associationsElement = doc.createElement("Associations");
+                for (Association association : associations) {
+                    Element associationElement = doc.createElement("Association");
+                    associationElement.setAttribute("actor", association.getActor().getName());
+                    associationElement.setAttribute("useCase", association.getUseCase().getName());
+                    associationsElement.appendChild(associationElement);
+                }
+                rootElement.appendChild(associationsElement);
+
+                // Save include and extend relationships
+                Element relationsElement = doc.createElement("Relationships");
+                for (UseCaseToUseCaseRelation include : includeRelations) {
+                    Element includeElement = doc.createElement("Include");
+                    includeElement.setAttribute("from", include.getUseCase1().getName());
+                    includeElement.setAttribute("to", include.getUseCase2().getName());
+                    relationsElement.appendChild(includeElement);
+                }
+                for (UseCaseToUseCaseRelation extend : extendRelations) {
+                    Element extendElement = doc.createElement("Extend");
+                    extendElement.setAttribute("from", extend.getUseCase1().getName());
+                    extendElement.setAttribute("to", extend.getUseCase2().getName());
+                    relationsElement.appendChild(extendElement);
+                }
+                rootElement.appendChild(relationsElement);
+
+                // Write content to XML file
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                Transformer transformer = transformerFactory.newTransformer();
+                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                DOMSource source = new DOMSource(doc);
+                StreamResult result = new StreamResult(file);
+                transformer.transform(source, result);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Save Error");
+                alert.setHeaderText("An error occurred while saving the file.");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        }
+    }
+
 
     // Exit the application (Placeholder method)
     public void handleExit() {
@@ -1353,16 +1586,98 @@ public class UseCaseDashboardController {
         // Logic to exit the application
     }
 
-    // Generate code (Placeholder method)
-    public void handleGenerateCode() {
-        System.out.println("Generating code...");
-        // Logic to generate code for the diagram
-    }
-
     // Export diagram (Placeholder method)
     public void handleExportDiagram() {
-        System.out.println("Exporting diagram...");
-        // Logic to export the diagram
+        WritableImage fullSnapshot = new WritableImage((int) drawingCanvas.getWidth(), (int) drawingCanvas.getHeight());
+        drawingCanvas.snapshot(null, fullSnapshot);
+
+        // Crop the snapshot to fit only the relevant content
+        WritableImage croppedSnapshot = cropCanvasSnapshot(fullSnapshot);
+
+        // Open a file chooser to save the cropped image
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Diagram");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("PNG Files", "*.png"),
+                new FileChooser.ExtensionFilter("JPEG Files", "*.jpg"),
+                new FileChooser.ExtensionFilter("BMP Files", "*.bmp")
+        );
+
+        File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
+        if (file != null) {
+            try {
+                // Determine file format
+                String fileExtension = getFileExtension(file.getName()).toLowerCase();
+                if (!Arrays.asList("png", "jpg", "bmp").contains(fileExtension)) {
+                    fileExtension = "png"; // Default to PNG if no valid extension is provided
+                }
+
+                // Save the cropped image
+                ImageIO.write(SwingFXUtils.fromFXImage(croppedSnapshot, null), fileExtension, file);
+            } catch (IOException e) {
+                e.printStackTrace();
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Export Error");
+                alert.setHeaderText("An error occurred while exporting the diagram.");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        }
+    }
+    private WritableImage cropCanvasSnapshot(WritableImage fullSnapshot) {
+        PixelReader pixelReader = fullSnapshot.getPixelReader();
+        int minX = (int) fullSnapshot.getWidth();
+        int minY = (int) fullSnapshot.getHeight();
+        int maxX = 0;
+        int maxY = 0;
+
+        // Scan for non-empty pixels
+        for (int x = 0; x < fullSnapshot.getWidth(); x++) {
+            for (int y = 0; y < fullSnapshot.getHeight(); y++) {
+                Color color = pixelReader.getColor(x, y);
+                if (!color.equals(Color.TRANSPARENT)) { // Identify non-transparent pixels
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+
+        // Ensure valid bounds for cropping
+        if (minX >= maxX || minY >= maxY) {
+            return fullSnapshot; // If no content is found, return the full snapshot
+        }
+
+        // Crop the snapshot
+        int croppedWidth = maxX - minX + 1;
+        int croppedHeight = maxY - minY + 1;
+        WritableImage croppedImage = new WritableImage(croppedWidth, croppedHeight);
+        PixelWriter pixelWriter = croppedImage.getPixelWriter();
+
+        for (int x = 0; x < croppedWidth; x++) {
+            for (int y = 0; y < croppedHeight; y++) {
+                Color color = ((javafx.scene.image.PixelReader) pixelReader).getColor(minX + x, minY + y);
+                pixelWriter.setColor(x, y, color);
+            }
+        }
+
+        return croppedImage;
+    }
+
+
+    private String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
+            return fileName.substring(dotIndex + 1);
+        }
+        return "";
+    }
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     public void handleAbout() {

@@ -19,10 +19,16 @@ module org.example.craftuml {
     //requires junit;
     requires org.junit.jupiter.api;
     requires org.mockito;
+    requires org.testng;
+
+    opens org.example.craftuml.models to org.mockito;
 
     opens org.example.craftuml to javafx.fxml;
     exports org.example.craftuml;
     exports org.example.craftuml.Service;
     opens org.example.craftuml.Service to javafx.fxml;
     opens org.example.craftuml.Tests to org.junit.platform.commons;
+    exports org.example.craftuml.UI;
+    opens org.example.craftuml.UI to javafx.fxml;
+    requires org.mockito;
 }

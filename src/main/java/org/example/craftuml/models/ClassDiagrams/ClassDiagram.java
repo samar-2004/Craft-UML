@@ -1,5 +1,7 @@
 package org.example.craftuml.models.ClassDiagrams;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -10,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClassDiagram implements DiagramComponent {
-    private String name;
     private List<AttributeData> attributes;
     private List<MethodData> methods;
     private double x, y;
@@ -19,6 +20,7 @@ public class ClassDiagram implements DiagramComponent {
     private static final Font FONT = Font.font("Arial", 12);
     private Rectangle diagramRectangle;
     private List<Relationship> relationships = new ArrayList<>();
+    private final StringProperty name = new SimpleStringProperty();
 
     public ClassDiagram(String name, double x, double y) {
         setName(name);
@@ -31,6 +33,20 @@ public class ClassDiagram implements DiagramComponent {
     {
         this.attributes = new ArrayList<>();
         this.methods = new ArrayList<>();
+    }
+    public String getName() {
+        return name.get();
+    }
+
+    public void setName(String name) {
+        if (name == null || name.trim().isEmpty() || name.contains(" ")) {
+            throw new IllegalArgumentException("Class name cannot be empty or contain spaces.");
+        }
+        this.name.set(name);
+    }
+
+    public StringProperty nameProperty() {
+        return name;
     }
     public void setRectangle(Rectangle rect) {
         this.diagramRectangle = rect;
@@ -53,12 +69,6 @@ public class ClassDiagram implements DiagramComponent {
         this.methods = new ArrayList<>(methods);
     }
 
-    public void setName(String name) {
-        if (name == null || name.trim().isEmpty() || name.contains(" ")) {
-            throw new IllegalArgumentException("Class name cannot be empty or contain spaces.");
-        }
-        this.name = name;
-    }
 
     public void addAttributes(AttributeData ad) {
         attributes.add(ad);
@@ -94,18 +104,11 @@ public class ClassDiagram implements DiagramComponent {
         this.y = y;
     }
 
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
     @Override
     public void setPosition(double x, double y) {
         this.x = x;
         this.y = y;
     }
-
     public void setWidth(double width) {
         this.width = width;
     }
@@ -121,13 +124,4 @@ public class ClassDiagram implements DiagramComponent {
     public double getHeight() {
         return this.height;
     }
-
-    public void addRelationship(Relationship relationship){
-       this.relationships.add(relationship);
-    }
-    public void removeRelationship(Relationship relationship)
-    {
-
-    }
-
 }

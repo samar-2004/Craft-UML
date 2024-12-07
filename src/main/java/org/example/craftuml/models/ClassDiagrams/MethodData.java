@@ -27,6 +27,9 @@ public class MethodData {
     }
 
     public void setName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Method name cannot be null or empty");
+        }
         this.name = name;
     }
 

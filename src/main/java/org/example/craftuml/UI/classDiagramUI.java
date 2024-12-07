@@ -22,22 +22,29 @@ public class classDiagramUI
 {
     private ClassDiagram currentClassDiagram;
     private Canvas drawingCanvas;
+    Label errorLabel = new Label();
+    private List<ClassDiagram> classDiagrams;
 
-    public classDiagramUI(Canvas drawingCanvas) {
+    public classDiagramUI(Canvas drawingCanvas,List<ClassDiagram> diagrams) {
         if (drawingCanvas == null) {
             throw new IllegalArgumentException("Canvas cannot be null");
         }
         this.drawingCanvas = drawingCanvas;
         this.currentClassDiagram = new ClassDiagram();
+        this.classDiagrams = diagrams;
     }
 
-    public classDiagramUI(Canvas drawingCanvas, ClassDiagram classDiagram) {
-        this(drawingCanvas);
+    public classDiagramUI(Canvas drawingCanvas, ClassDiagram classDiagram,List<ClassDiagram> diagrams) {
+        this.drawingCanvas = drawingCanvas;
         this.currentClassDiagram = classDiagram;
+        this.classDiagrams = diagrams;
     }
 
     public ClassDiagram showClassDiagramDialog() {
+        errorLabel.setVisible(false);
         Stage inputStage = new Stage();
+        Button okButton = new Button("OK");
+        Button cancelButton = new Button("Cancel");
         inputStage.setTitle("Create or Edit Class Diagram");
 
         VBox vbox = new VBox(15);
@@ -62,9 +69,12 @@ public class classDiagramUI
         classNameField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.contains(" ")) {
                 classNameField.setStyle("-fx-border-color: red;");
+                okButton.setDisable(true);
+
             } else {
                 classNameField.setStyle("");
                 currentClassDiagram.setName(classNameField.getText());
+                okButton.setDisable(false);
             }
         });
 
@@ -99,7 +109,7 @@ public class classDiagramUI
         methodsVBox.setVisible(true);
 
         for (MethodData method : currentClassDiagram.getMethods()) {
-            addMethodField(methodsVBox, method);
+            addMethodField(methodsVBox, method,okButton);
         }
 
         Button addMethodButton = new Button("+");
@@ -109,7 +119,7 @@ public class classDiagramUI
         removeMethodButton.setStyle("-fx-background-color:#503774; -fx-text-fill: white;");
         HBox methodButtons = new HBox(10, addMethodButton, removeMethodButton);
 
-        addMethodButton.setOnAction(e -> addMethodField(methodsVBox, null));
+        addMethodButton.setOnAction(e -> addMethodField(methodsVBox, null,okButton));
         removeMethodButton.setOnAction(e -> {
             if (!methodsVBox.getChildren().isEmpty()) {
                 methodsVBox.getChildren().remove(methodsVBox.getChildren().size() - 1);
@@ -117,8 +127,6 @@ public class classDiagramUI
         });
 
         HBox buttonBox = new HBox(10);
-        Button okButton = new Button("OK");
-        Button cancelButton = new Button("Cancel");
 
         cancelButton.setOnAction(e -> {
             currentClassDiagram = null;
@@ -152,10 +160,19 @@ public class classDiagramUI
 
         okButton.setDefaultButton(true);
         okButton.setOnAction(e -> {
+
+
             String className = classNameField.getText().trim();
             if (className.isEmpty()) {
                 showError("Class name cannot be empty.");
                 return;
+            }
+
+            for (ClassDiagram diagram : classDiagrams) {
+                if (diagram.getName().equalsIgnoreCase(className) && !diagram.equals(currentClassDiagram)) {
+                    showError("A class diagram with this name already exists.");
+                    return;
+                }
             }
 
             if (!areFieldsFilled(attributesVBox)) {
@@ -167,6 +184,12 @@ public class classDiagramUI
                 showError("Please ensure all fields are filled for each method.");
                 return;
             }
+            if(errorLabel.isVisible())
+            {
+                showError("Please ensure all fields are filled for each method.");
+                return;
+            }
+
             List<MethodData> methods = gatherMethods(methodsVBox);
 
 
@@ -209,14 +232,16 @@ public class classDiagramUI
         return currentClassDiagram;
     }
 
-    private boolean areFieldsFilled(VBox vBox) {
+    public boolean areFieldsFilled(VBox vBox) {
         for (Node node : vBox.getChildren()) {
             if (node instanceof VBox) {
                 VBox entryVBox = (VBox) node;
                 ComboBox<String> accessCombo = null;
                 TextField nameField = null;
                 TextField dataField = null;
+                Label errorLabel = null;  // Declare the errorLabel variable to check visibility
 
+                // Traverse through inner VBox to check fields and error label
                 for (Node innerNode : entryVBox.getChildren()) {
                     if (innerNode instanceof HBox) {
                         HBox hbox = (HBox) innerNode;
@@ -234,6 +259,8 @@ public class classDiagramUI
                                         } else {
                                             dataField = (TextField) fieldNode;
                                         }
+                                    } else if (fieldNode instanceof Label && ((Label) fieldNode).getStyleClass().contains("errorLabel")) {
+                                        errorLabel = (Label) fieldNode;  // Check for error label
                                     }
                                 }
                             }
@@ -241,17 +268,20 @@ public class classDiagramUI
                     }
                 }
 
+                // If any field is not filled or an error label is visible, return false
                 if (accessCombo == null || accessCombo.getValue() == null ||
                         nameField == null || nameField.getText().trim().isEmpty() ||
-                        dataField == null || dataField.getText().trim().isEmpty()) {
-                    return false;
+                        dataField == null || dataField.getText().trim().isEmpty() ||
+                        (errorLabel != null && errorLabel.isVisible())) {
+                    return false;  // Fields are incomplete or there's an error label visible
                 }
             }
         }
         return true;
     }
 
-    private void addAttributeField(VBox attributesVBox, AttributeData existingAttribute) {
+
+    public void addAttributeField(VBox attributesVBox, AttributeData existingAttribute) {
         Region separator = new Region();
         separator.setStyle("-fx-background-color: #D3D3D3; -fx-min-height: 1.5px;");
         long attributeCount = attributesVBox.getChildren().stream()
@@ -288,7 +318,7 @@ public class classDiagramUI
         attributesVBox.getChildren().addAll(newAttributeVBox, separator);
     }
 
-    private void addMethodField(VBox methodsVBox, MethodData existingMethod) {
+    public void addMethodField(VBox methodsVBox, MethodData existingMethod, Button okButton) {
         Region separator = new Region();
         separator.setStyle("-fx-background-color: #D3D3D3; -fx-min-height: 1.5px;");
 
@@ -312,15 +342,15 @@ public class classDiagramUI
         returnTypeField.setPromptText("Enter Return Type");
         returnTypeField.setText(existingMethod != null ? existingMethod.getReturnType() : "");
 
-        Label errorLabel = new Label();
         errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
         errorLabel.setVisible(false);
 
         methodNameField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (validateMethodName(newValue)) {
-
                 methodNameField.setStyle("");
                 errorLabel.setVisible(false);
+                okButton.setDisable(false);
+
             } else
             {
                 methodNameField.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
@@ -343,7 +373,7 @@ public class classDiagramUI
         newMethodVBox.getChildren().addAll(methodLabel, fieldBox);
         methodsVBox.getChildren().addAll(newMethodVBox, separator);
     }
-    private boolean validateMethodName(String methodName) {
+    public boolean validateMethodName(String methodName) {
         if (methodName == null || methodName.isEmpty()) {
             return false;
         }
@@ -434,7 +464,7 @@ public class classDiagramUI
         return methods;
     }
 
-    private void showError(String message) {
+    public void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText(null);
