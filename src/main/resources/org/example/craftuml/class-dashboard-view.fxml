@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
-<BorderPane stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.craftuml.Service.ClassDashboardController">
+<BorderPane stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.craftuml.Controllers.ClassDashboardController">
        <top>
               <HBox styleClass="top-buttons-container" alignment="CENTER" spacing="10">
                      <Button text="New Project" onAction="#handleNewProject" styleClass="top-button">

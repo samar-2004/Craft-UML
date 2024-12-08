@@ -1,11 +1,16 @@
-package org.example.craftuml.Service;
+package org.example.craftuml.Controllers;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.VPos;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -13,18 +18,36 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import javafx.scene.text.TextFlow;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import org.example.craftuml.Business.ActorService;
-import org.example.craftuml.Business.AssociationService;
-import org.example.craftuml.Business.UseCaseService;
-import org.example.craftuml.Business.UseCaseRelationService;
+import org.example.craftuml.Business.ActorManager;
+import org.example.craftuml.Business.AssociationManager;
+import org.example.craftuml.Business.UseCaseManager;
+import org.example.craftuml.Business.UseCaseRelationManager;
 import org.example.craftuml.models.UseCaseDiagrams.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageIO;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,27 +60,30 @@ public class UseCaseDashboardController {
     private ListView<String> modelInfoList;
 
     private UseCaseDiagram activeDiagram;
+    private Actor activeActor;
+    private UseCase activeUseCase;
+    private ContextMenu currentContextMenu;
 
     private double dragStartX = 0;
     private double dragStartY = 0;
-    private UseCase activeUseCase;
     private boolean resizing = false;
     private double initialX, initialY;
     private double initialWidth;
     private double initialHeight;
+    private boolean isSaveable = false;
     private List<Actor> actors = new ArrayList<>();
-    private ActorService actorDAO = new ActorService(actors);
+    private ActorManager actorDAO = new ActorManager(actors);
     private List<UseCase> useCases = new ArrayList<>();
-    private UseCaseService useCaseDAO = new UseCaseService(useCases);
+    private UseCaseManager useCaseDAO = new UseCaseManager(useCases);
     private List<Association> associations = new ArrayList<>();
-    private AssociationService associationDAO = new AssociationService(useCases,actors);
+    private AssociationManager associationDAO = new AssociationManager(useCases,actors);
     private Object draggedElement = null; // Keeps track of the current dragged element
     private double dragOffsetX = 0;
     private double dragOffsetY = 0;
 
     private List<UseCaseToUseCaseRelation> includeRelations = new ArrayList<>();
     private List<UseCaseToUseCaseRelation> extendRelations = new ArrayList<>();
-    private UseCaseRelationService useCaseRelationDAO = new UseCaseRelationService(includeRelations,extendRelations);
+    private UseCaseRelationManager useCaseRelationDAO = new UseCaseRelationManager(includeRelations,extendRelations);
 
     private static final double RESIZE_MARGIN = 10;
 
@@ -330,6 +356,7 @@ public class UseCaseDashboardController {
         {
             useCaseRelationDAO.drawUseCaseRelation(extend.getUseCase1(),extend.getUseCase2(),extend.getRelationType(),drawingCanvas.getGraphicsContext2D());
         }
+        isSaveable = false;
 
     }
 
@@ -415,8 +442,9 @@ public class UseCaseDashboardController {
 
                 redrawCanvas();
 
-                enableNameEdit();
-                enableDragging();
+//                enableNameEdit();
+//                enableDragging();
+                enableInteractivity();
             }
         });
     }
@@ -471,8 +499,9 @@ public class UseCaseDashboardController {
 
                 // Redraw canvas and enable features
                 redrawCanvas();
-                enableNameEdit();
-                enableDragging();
+//                enableNameEdit();
+//                enableDragging();
+                enableInteractivity();
             } catch (IllegalArgumentException e) {
                 showErrorMessage(e.getMessage());
             }
@@ -525,20 +554,19 @@ public class UseCaseDashboardController {
         String regex = "([A-Z][a-z0-9]*)+(\\s[A-Z][a-z0-9]*)*"; // UpperCamelCase regex
         return name.matches(regex);
     }
-
-    private void enableDragging() {
+    private void enableInteractivity() {
         // Mouse moved: Change cursor to move symbol when over a draggable element
         drawingCanvas.setOnMouseMoved(event -> {
             boolean isHovering = false;
 
             // Check if hovering over any actor
-            if (ActorService.isHoveringOverActor(event.getX(), event.getY(), actors)) {
+            if (ActorManager.isHoveringOverActor(event.getX(), event.getY(), actors)) {
                 drawingCanvas.setCursor(Cursor.MOVE); // Change cursor to move symbol
                 isHovering = true;
             }
 
             // Check if hovering over any use case (if not hovering over an actor)
-            if (!isHovering && UseCaseService.isHoveringOverUseCase(event.getX(), event.getY(), useCases)) {
+            if (!isHovering && UseCaseManager.isHoveringOverUseCase(event.getX(), event.getY(), useCases)) {
                 drawingCanvas.setCursor(Cursor.MOVE); // Change cursor to move symbol
                 isHovering = true;
             }
@@ -549,33 +577,22 @@ public class UseCaseDashboardController {
             }
         });
 
-        // Mouse pressed: Detect the element being dragged
+        // Mouse pressed: Detect the element being dragged or right-clicked for context menu
         drawingCanvas.setOnMousePressed(event -> {
-            draggedElement = null;
-            dragOffsetX = 0;
-            dragOffsetY = 0;
-
-            // Check if an actor is clicked
-            draggedElement = ActorService.getClickedActor(event.getX(), event.getY(), actors);
-            if (draggedElement != null) {
-                dragOffsetX = event.getX() - ((Actor) draggedElement).getX();
-                dragOffsetY = event.getY() - ((Actor) draggedElement).getY();
-                return;
-            }
-
-            // Check if a use case is clicked
-            draggedElement = UseCaseService.getClickedUseCase(event.getX(), event.getY(), useCases);
-            if (draggedElement != null) {
-                dragOffsetX = event.getX() - ((UseCase) draggedElement).getX();
-                dragOffsetY = event.getY() - ((UseCase) draggedElement).getY();
+            if (event.isSecondaryButtonDown()) {
+                closeContextMenu(); // Right-click for context menu
+                handleRightClick(event);
+            } else { // Left-click or drag action
+                handleMousePress(event);
             }
         });
 
         // Mouse dragged: Update the position of the dragged element
         drawingCanvas.setOnMouseDragged(event -> {
             if (draggedElement != null) {
+                closeContextMenu();
                 if (draggedElement instanceof Actor) {
-                    ActorService.updateActorPosition(
+                    ActorManager.updateActorPosition(
                             (Actor) draggedElement,
                             event.getX(),
                             event.getY(),
@@ -585,7 +602,7 @@ public class UseCaseDashboardController {
                             drawingCanvas.getHeight()
                     );
                 } else if (draggedElement instanceof UseCase) {
-                    UseCaseService.updateUseCasePosition(
+                    UseCaseManager.updateUseCasePosition(
                             (UseCase) draggedElement,
                             event.getX(),
                             event.getY(),
@@ -604,52 +621,54 @@ public class UseCaseDashboardController {
         });
     }
 
-    private void enableNameEdit() {
-        drawingCanvas.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) { // Detect double-click
-                double clickX = event.getX();
-                double clickY = event.getY();
+    private void handleRightClick(MouseEvent event) {
+        double clickX = event.getX();
+        double clickY = event.getY();
 
-                // Check if an actor was clicked
-                Actor clickedActor = actorDAO.findActorByPosition(clickX, clickY); // Delegating to ActorDAO
-                if (clickedActor != null) {
-                    editActorName(clickedActor);
-                    return; // Exit to avoid checking use cases
-                }
+        // Check if an actor was clicked
+        Actor clickedActor = actorDAO.findActorByPosition(clickX, clickY);
+        if (clickedActor != null) {
+            showContextMenu(clickedActor, event.getScreenX(), event.getScreenY(), "actor");
+            event.consume(); // Prevent further processing
+            return;
+        }
 
-                // Delegate use case click logic to UseCaseDAO
-                UseCase clickedUseCase = useCaseDAO.findClickedUseCase(clickX, clickY);
-                if (clickedUseCase != null) {
-                    editUseCaseName(clickedUseCase);
-                }
-            }
-        });
+        // Use UseCaseDAO to check if a use case was clicked
+        UseCase clickedUseCase = useCaseDAO.findClickedUseCase(clickX, clickY);
+        if (clickedUseCase != null) {
+            showContextMenu(clickedUseCase, event.getScreenX(), event.getScreenY(), "useCase");
+            event.consume(); // Prevent further processing
+        }
+    }
 
-        drawingCanvas.setOnMousePressed(event -> {
-            if (event.isSecondaryButtonDown()) { // Detect right-click for context menu
-                double clickX = event.getX();
-                double clickY = event.getY();
+    private void handleMousePress(MouseEvent event) {
+        draggedElement = null;
+        dragOffsetX = 0;
+        dragOffsetY = 0;
 
-                // Check if an actor was clicked
-                Actor clickedActor = actorDAO.findActorByPosition(clickX, clickY); // Delegating to ActorDAO
-                if (clickedActor != null) {
-                    showContextMenu(clickedActor, event.getScreenX(), event.getScreenY(), "actor");
-                    event.consume(); // Prevent further processing of the right-click event
-                    return; // Exit after finding the first clicked actor
-                }
+        // Check if an actor is clicked
+        draggedElement = ActorManager.getClickedActor(event.getX(), event.getY(), actors);
+        if (draggedElement != null) {
+            dragOffsetX = event.getX() - ((Actor) draggedElement).getX();
+            dragOffsetY = event.getY() - ((Actor) draggedElement).getY();
+            return;
+        }
 
-                // Use UseCaseDAO to check if a use case was clicked
-                UseCase clickedUseCase = useCaseDAO.findClickedUseCase(clickX, clickY);
-                if (clickedUseCase != null) {
-                    showContextMenu(clickedUseCase, event.getScreenX(), event.getScreenY(), "useCase");
-                    event.consume();
-                }
-            }
-        });
+        // Check if a use case is clicked
+        draggedElement = UseCaseManager.getClickedUseCase(event.getX(), event.getY(), useCases);
+        if (draggedElement != null) {
+            dragOffsetX = event.getX() - ((UseCase) draggedElement).getX();
+            dragOffsetY = event.getY() - ((UseCase) draggedElement).getY();
+        }
     }
 
     private void showContextMenu(Object element, double screenX, double screenY, String type) {
+
+        if (currentContextMenu != null) {
+            currentContextMenu.hide(); // Hide the previous context menu
+        }
         ContextMenu contextMenu = new ContextMenu();
+        currentContextMenu = contextMenu;
 
         // Edit option
         MenuItem editItem = new MenuItem("Edit");
@@ -663,18 +682,56 @@ public class UseCaseDashboardController {
 
         // Delete option
         MenuItem deleteItem = new MenuItem("Delete");
+
         deleteItem.setOnAction(e -> {
             if ("actor".equals(type)) {
-                actors.remove(element); // Remove actor from list
+                Actor actorToDelete = (Actor) element;
+
+                // Remove associations with other elements
+                removeActorAssociations(actorToDelete);
+
+                // Remove actor from the list
+                actors.remove(actorToDelete);
             } else if ("useCase".equals(type)) {
-                useCases.remove(element); // Remove use case from list
+                UseCase useCaseToDelete = (UseCase) element;
+
+                // Remove associations (e.g., includes, extends, associations)
+                removeUseCaseAssociations(useCaseToDelete);
+
+                // Remove use case from the list
+                useCases.remove(useCaseToDelete);
             }
+
             redrawCanvas(); // Redraw the canvas after removal
         });
-
         contextMenu.getItems().addAll(editItem, deleteItem);
         contextMenu.show(drawingCanvas, screenX, screenY);
     }
+    private void removeActorAssociations(Actor actor) {
+        // Remove all associations involving the actor
+        associations.removeIf(association -> association.getActor().equals(actor));
+    }
+
+    private void removeUseCaseAssociations(UseCase useCase) {
+        // Remove all associations involving the use case
+        associations.removeIf(association -> association.getUseCase().equals(useCase));
+
+        // Remove include and extend relationships involving the use case
+        includeRelations.removeIf(include ->
+                include.getUseCase1().equals(useCase) || include.getUseCase2().equals(useCase)
+        );
+
+        extendRelations.removeIf(extend ->
+                extend.getUseCase1().equals(useCase) || extend.getUseCase2().equals(useCase)
+        );
+    }
+
+    private void closeContextMenu() {
+        if (currentContextMenu != null) {
+            currentContextMenu.hide();
+        }
+    }
+
 
     private void showErrorMessage(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -953,45 +1010,405 @@ public class UseCaseDashboardController {
 
     // New project creation logic (Placeholder method)
     public void handleNewProject() {
-        System.out.println("New project created.");
-        // Additional logic to create a new project
+        if(isSaveable)
+        {
+            clearWorkspace();
+        }
+
+        else {
+            Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmationAlert.setTitle("New Project");
+            confirmationAlert.setHeaderText("Are you sure you want to create a new project?");
+            confirmationAlert.setContentText("Unsaved changes will be lost.");
+
+            Optional<ButtonType> result = confirmationAlert.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                clearWorkspace();
+            } else {
+                System.out.println("New project creation canceled.");
+            }
+        }
     }
 
-    // Open an existing project (Placeholder method)
+    private void clearWorkspace() {
+        activeDiagram = null;
+
+        actors.clear();
+        useCases.clear();
+        extendRelations.clear();
+        associations.clear();
+        includeRelations.clear();
+
+
+        dragStartX = 0;
+        dragStartY = 0;
+
+        if (drawingCanvas != null) {
+            GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
+            gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
+        }
+
+        if (modelInfoList != null) {
+            modelInfoList.getItems().clear();
+        }
+    }
+    @FXML
     public void handleOpenProject() {
-        System.out.println("Opening project...");
-        // Logic to open an existing project
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Use Case Diagram");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+        File file = fileChooser.showOpenDialog(drawingCanvas.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                Document doc = docBuilder.parse(file);
+
+                // Clear previous data
+                actors.clear();
+                useCases.clear();
+                associations.clear();
+                includeRelations.clear();
+                extendRelations.clear();
+
+                // Load the diagram
+                NodeList diagramNodes = doc.getElementsByTagName("UseCaseDiagram");
+                if (diagramNodes.getLength() > 0) {
+                    Element diagramElement = (Element) diagramNodes.item(0);
+                    activeDiagram = new UseCaseDiagram();
+                    activeDiagram.setName(diagramElement.getAttribute("name"));
+                    activeDiagram.setX(Double.parseDouble(diagramElement.getAttribute("x")));
+                    activeDiagram.setY(Double.parseDouble(diagramElement.getAttribute("y")));
+                    activeDiagram.setWidth(Double.parseDouble(diagramElement.getAttribute("width")));
+                    activeDiagram.setHeight(Double.parseDouble(diagramElement.getAttribute("height")));
+
+                    System.out.println("Loaded diagram: " + activeDiagram.getName());
+                }
+
+                // Load actors
+                NodeList actorNodes = doc.getElementsByTagName("Actor");
+                for (int i = 0; i < actorNodes.getLength(); i++) {
+                    Element actorElement = (Element) actorNodes.item(i);
+                    Actor actor = new Actor(actorElement.getAttribute("name"));
+                    actor.setX(Double.parseDouble(actorElement.getAttribute("x")));
+                    actor.setY(Double.parseDouble(actorElement.getAttribute("y")));
+                    actors.add(actor);
+                    System.out.println("Loaded actor: " + actor.getName() + " at (" + actor.getX() + ", " + actor.getY() + ")");
+                }
+
+                // Load use cases
+                NodeList useCaseNodes = doc.getElementsByTagName("UseCase");
+                for (int i = 0; i < useCaseNodes.getLength(); i++) {
+                    Element useCaseElement = (Element) useCaseNodes.item(i);
+                    UseCase useCase = new UseCase(useCaseElement.getAttribute("name"));
+                    useCase.setX(Double.parseDouble(useCaseElement.getAttribute("x")));
+                    useCase.setY(Double.parseDouble(useCaseElement.getAttribute("y")));
+                    useCases.add(useCase);
+                    System.out.println("Loaded use case: " + useCase.getName() + " at (" + useCase.getX() + ", " + useCase.getY() + ")");
+                }
+
+                // Load associations
+                NodeList associationNodes = doc.getElementsByTagName("Association");
+                for (int i = 0; i < associationNodes.getLength(); i++) {
+                    Element associationElement = (Element) associationNodes.item(i);
+                    String actorName = associationElement.getAttribute("actor");
+                    String useCaseName = associationElement.getAttribute("useCase");
+                    Actor actor = findActorByName(actorName);
+                    UseCase useCase = findUseCaseByName(useCaseName);
+                    if (actor != null && useCase != null) {
+                        associations.add(new Association(actor, useCase));
+                        System.out.println("Loaded association: " + actor.getName() + " -> " + useCase.getName());
+                    }
+                }
+
+                // Load include and extend relationships
+                NodeList relationNodes = doc.getElementsByTagName("Relationships").item(0).getChildNodes();
+                for (int i = 0; i < relationNodes.getLength(); i++) {
+                    if (relationNodes.item(i) instanceof Element) {
+                        Element relationElement = (Element) relationNodes.item(i);
+                        String from = relationElement.getAttribute("from");
+                        String to = relationElement.getAttribute("to");
+                        UseCase fromUseCase = findUseCaseByName(from);
+                        UseCase toUseCase = findUseCaseByName(to);
+                        if (fromUseCase != null && toUseCase != null) {
+                            if ("Include".equals(relationElement.getTagName())) {
+                                includeRelations.add(new UseCaseToUseCaseRelation(fromUseCase, toUseCase, "include"));
+                                System.out.println("Loaded include relation: " + from + " -> " + to);
+                            } else if ("Extend".equals(relationElement.getTagName())) {
+                                extendRelations.add(new UseCaseToUseCaseRelation(fromUseCase, toUseCase, "extend"));
+                                System.out.println("Loaded extend relation: " + from + " -> " + to);
+                            }
+                        }
+                    }
+                }
+
+                // Enable dragging for actors and use cases
+                for (Actor actor : actors) {
+//                    enableDragging();
+                    enableInteractivity();
+                }
+                for (UseCase useCase : useCases) {
+//                    enableDragging();
+                    enableInteractivity();
+                }
+
+                // Redraw canvas (ensure it runs on JavaFX application thread)
+                Platform.runLater(() -> redrawCanvas());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Open Error");
+                alert.setHeaderText("An error occurred while opening the file.");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        }
     }
 
-    // Save current project (Placeholder method)
-    public void handleSaveProject() {
-        System.out.println("Saving project...");
-        // Logic to save the current project
+    private Actor findActorByName(String name) {
+        for (Actor actor : actors) {
+            if (actor.getName().equals(name)) {
+                return actor;
+            }
+        }
+        return null;
     }
+
+    private UseCase findUseCaseByName(String name) {
+        for (UseCase useCase : useCases) {
+            if (useCase.getName().equals(name)) {
+                return useCase;
+            }
+        }
+        return null;
+    }
+
+
+    @FXML
+    public void handleSaveProject() {
+
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save Use Case Diagram");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+            File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
+            if (file != null) {
+                try {
+                    // Create XML document
+                    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                    Document doc = docBuilder.newDocument();
+                    // Root element
+                    Element rootElement = doc.createElement("UseCaseDiagram");
+                    rootElement.setAttribute("name", activeDiagram.getName());
+                    rootElement.setAttribute("x", String.valueOf(activeDiagram.getX()));
+                    rootElement.setAttribute("y", String.valueOf(activeDiagram.getY()));
+                    rootElement.setAttribute("width", String.valueOf(activeDiagram.getWidth()));
+                    rootElement.setAttribute("height", String.valueOf(activeDiagram.getHeight()));
+                    doc.appendChild(rootElement);
+                    // Save actors
+                    Element actorsElement = doc.createElement("Actors");
+                    for (Actor actor : actors) {
+                        Element actorElement = doc.createElement("Actor");
+                        actorElement.setAttribute("name", actor.getName());
+                        actorElement.setAttribute("x", String.valueOf(actor.getX()));
+                        actorElement.setAttribute("y", String.valueOf(actor.getY()));
+                        actorsElement.appendChild(actorElement);
+                    }
+                    rootElement.appendChild(actorsElement);
+                    // Save use cases
+                    Element useCasesElement = doc.createElement("UseCases");
+                    for (UseCase useCase : useCases) {
+                        Element useCaseElement = doc.createElement("UseCase");
+                        useCaseElement.setAttribute("name", useCase.getName());
+                        useCaseElement.setAttribute("x", String.valueOf(useCase.getX()));
+                        useCaseElement.setAttribute("y", String.valueOf(useCase.getY()));
+                        useCasesElement.appendChild(useCaseElement);
+                    }
+                    rootElement.appendChild(useCasesElement);
+                    // Save associations
+                    Element associationsElement = doc.createElement("Associations");
+                    for (Association association : associations) {
+                        Element associationElement = doc.createElement("Association");
+                        associationElement.setAttribute("actor", association.getActor().getName());
+                        associationElement.setAttribute("useCase", association.getUseCase().getName());
+                        associationsElement.appendChild(associationElement);
+                    }
+                    rootElement.appendChild(associationsElement);
+                    // Save include and extend relationships
+                    Element relationsElement = doc.createElement("Relationships");
+                    for (UseCaseToUseCaseRelation include : includeRelations) {
+                        Element includeElement = doc.createElement("Include");
+                        includeElement.setAttribute("from", include.getUseCase1().getName());
+                        includeElement.setAttribute("to", include.getUseCase2().getName());
+                        relationsElement.appendChild(includeElement);
+                    }
+                    for (UseCaseToUseCaseRelation extend : extendRelations) {
+                        Element extendElement = doc.createElement("Extend");
+                        extendElement.setAttribute("from", extend.getUseCase1().getName());
+                        extendElement.setAttribute("to", extend.getUseCase2().getName());
+                        relationsElement.appendChild(extendElement);
+                    }
+                    rootElement.appendChild(relationsElement);
+                    // Write content to XML file
+                    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    Transformer transformer = transformerFactory.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    DOMSource source = new DOMSource(doc);
+                    StreamResult result = new StreamResult(file);
+                    transformer.transform(source, result);
+                    isSaveable = true;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Save Error");
+                    alert.setHeaderText("An error occurred while saving the file.");
+                    alert.setContentText(e.getMessage());
+                    alert.showAndWait();
+                }
+            }
+
+    }
+
 
     // Exit the application (Placeholder method)
     public void handleExit() {
-        System.out.println("Exiting application...");
-        // Logic to exit the application
+        Alert exitConfirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        exitConfirmation.setTitle("Exit Application");
+        exitConfirmation.setHeaderText("Are you sure you want to exit?");
+        exitConfirmation.setContentText("Any unsaved changes will be lost.");
+
+        Optional<ButtonType> result = exitConfirmation.showAndWait();
+
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            System.exit(0);
+        } else {
+            System.out.println("Exit canceled by the user.");
+        }
     }
 
-    // Generate code (Placeholder method)
-    public void handleGenerateCode() {
-        System.out.println("Generating code...");
-        // Logic to generate code for the diagram
-    }
 
-    // Export diagram (Placeholder method)
+    @FXML
     public void handleExportDiagram() {
-        System.out.println("Exporting diagram...");
-        // Logic to export the diagram
+        WritableImage fullSnapshot = new WritableImage((int) drawingCanvas.getWidth(), (int) drawingCanvas.getHeight());
+        drawingCanvas.snapshot(null, fullSnapshot);
+        // Crop the snapshot to fit only the relevant content
+        WritableImage croppedSnapshot = cropCanvasSnapshot(fullSnapshot);
+        // Open a file chooser to save the cropped image
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Diagram");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("PNG Files", "*.png"),
+                new FileChooser.ExtensionFilter("JPEG Files", "*.jpg"),
+                new FileChooser.ExtensionFilter("BMP Files", "*.bmp")
+        );
+        File file = fileChooser.showSaveDialog(drawingCanvas.getScene().getWindow());
+        if (file != null) {
+            try {
+                // Determine file format
+                String fileExtension = getFileExtension(file.getName()).toLowerCase();
+                if (!Arrays.asList("png", "jpg", "bmp").contains(fileExtension)) {
+                    fileExtension = "png"; // Default to PNG if no valid extension is provided
+                }
+                // Save the cropped image
+                ImageIO.write(SwingFXUtils.fromFXImage(croppedSnapshot, null), fileExtension, file);
+            } catch (IOException e) {
+                e.printStackTrace();
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Export Error");
+                alert.setHeaderText("An error occurred while exporting the diagram.");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        }
+    }
+    private WritableImage cropCanvasSnapshot(WritableImage fullSnapshot) {
+        PixelReader pixelReader = fullSnapshot.getPixelReader();
+        int minX = (int) fullSnapshot.getWidth();
+        int minY = (int) fullSnapshot.getHeight();
+        int maxX = 0;
+        int maxY = 0;
+        // Scan for non-empty pixels
+        for (int x = 0; x < fullSnapshot.getWidth(); x++) {
+            for (int y = 0; y < fullSnapshot.getHeight(); y++) {
+                Color color = pixelReader.getColor(x, y);
+                if (!color.equals(Color.TRANSPARENT)) { // Identify non-transparent pixels
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+        // Ensure valid bounds for cropping
+        if (minX >= maxX || minY >= maxY) {
+            return fullSnapshot; // If no content is found, return the full snapshot
+        }
+        // Crop the snapshot
+        int croppedWidth = maxX - minX + 1;
+        int croppedHeight = maxY - minY + 1;
+        WritableImage croppedImage = new WritableImage(croppedWidth, croppedHeight);
+        PixelWriter pixelWriter = croppedImage.getPixelWriter();
+        for (int x = 0; x < croppedWidth; x++) {
+            for (int y = 0; y < croppedHeight; y++) {
+                Color color = ((javafx.scene.image.PixelReader) pixelReader).getColor(minX + x, minY + y);
+                pixelWriter.setColor(x, y, color);
+            }
+        }
+        return croppedImage;
+    }
+    private String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
+            return fileName.substring(dotIndex + 1);
+        }
+        return "";
+    }
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     public void handleAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("About");
-        alert.setHeaderText("Craft UML");
-        alert.setContentText("Craft UML - A tool for creating UML diagrams and generating code.");
+        alert.setTitle("About Craft UML");
+        alert.setHeaderText("Craft UML - UML Diagramming Tool");
+
+        String content = "Craft UML is a tool designed to help users create UML diagrams with ease. " +
+                "The application supports various types of diagrams including class diagrams, " +
+                " and use-case diagrams. Additionally, it allows users to generate " +
+                "code based on the designed diagrams, streamlining the software development process.\n\n" +
+                "Creators:\n" +
+                "SAMAR\n" +
+                "NOMAN\n" +
+                "HASSAAN\n\n" +
+                "Version: 1.0.0\n" +
+                "For more information, visit: www.craftuml.com";
+
+        alert.setContentText(content);
+
+        TextFlow textFlow = new TextFlow();
+        Text text = new Text(content);
+        text.setStyle("-fx-font-size: 14px; -fx-font-family: Arial; -fx-fill: #333;");
+        textFlow.getChildren().add(text);
+
+        // Set the preferred width of the textFlow to control wrapping
+        textFlow.setMaxWidth(400); // You can adjust this value based on your preference
+
+        // Add TextFlow to the alert
+        alert.getDialogPane().setContent(textFlow);
+
+        // Set the maximum width of the alert dialog to fit the screen
+        alert.getDialogPane().setPrefWidth(450);  // Adjust width as necessary to fit within the screen size
+
+        // Optionally, set a minimum height
+        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+
+        alert.getDialogPane().getStyleClass().add("about-alert");
+
         alert.showAndWait();
     }
 

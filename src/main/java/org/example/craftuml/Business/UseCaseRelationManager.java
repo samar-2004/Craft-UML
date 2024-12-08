@@ -8,11 +8,11 @@ import org.example.craftuml.models.UseCaseDiagrams.UseCaseToUseCaseRelation;
 
 import java.util.List;
 
-public class UseCaseRelationService {
+public class UseCaseRelationManager {
     private List<UseCaseToUseCaseRelation> includeRelations;
     private List<UseCaseToUseCaseRelation> extendRelations;
 
-    public UseCaseRelationService(List<UseCaseToUseCaseRelation> includeRelations, List<UseCaseToUseCaseRelation> extendRelations) {
+    public UseCaseRelationManager(List<UseCaseToUseCaseRelation> includeRelations, List<UseCaseToUseCaseRelation> extendRelations) {
         this.includeRelations = includeRelations;
         this.extendRelations = extendRelations;
     }
