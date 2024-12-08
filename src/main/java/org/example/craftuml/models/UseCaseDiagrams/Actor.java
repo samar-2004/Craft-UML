@@ -5,6 +5,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import org.example.craftuml.models.DiagramComponent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -81,7 +82,7 @@ public class Actor implements DiagramComponent {
         this.x = 0;  // Default position
         this.y = 0;  // Default position
         actorRectangle = new Rectangle(x, y, width, height); // Initialize the actor's rectangle
-
+        associations = new ArrayList<>();
         // Add mouse events to the actor's rectangle
         enableMouseEvents();
     }

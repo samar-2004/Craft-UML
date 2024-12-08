@@ -69,20 +69,20 @@ public class ClassDashboardController {
      * It is defined as an FXML element, allowing it to be accessed and manipulated in the controller.
      */
     @FXML
-    private Canvas drawingCanvas;
+    public Canvas drawingCanvas;
     /**
      * The scroll pane that allows users to scroll through the class diagram when it exceeds the visible area.
      * It is defined as an FXML element.
      */
     @FXML
-    private ScrollPane scrollPane;
+    public ScrollPane scrollPane;
 
     /**
      * The list view displaying information about the class model.
      * The list is populated with model information, such as class names and other relevant data.
      */
     @FXML
-    private ListView<String> modelInfoList = new ListView<>();
+    public ListView<String> modelInfoList = new ListView<>();
 
     /**
      * An observable list holding names of models to be displayed in the `modelInfoList`.
@@ -136,7 +136,7 @@ public class ClassDashboardController {
     /**
      * A list of class diagrams that are part of the current diagram.
      */
-    private List<ClassDiagram> classDiagrams = new ArrayList<>();
+    public List<ClassDiagram> classDiagrams = new ArrayList<>();
 
     /**
      * The starting X-coordinate of a drag action.
@@ -262,7 +262,7 @@ public class ClassDashboardController {
      * It organizes class diagrams, interface diagrams, and relationships into separate sections and
      * refreshes the list view with the latest data.
      */
-    private void updateListView() {
+    public void updateListView() {
         modelNames.clear();
         modelObjects.clear();
 

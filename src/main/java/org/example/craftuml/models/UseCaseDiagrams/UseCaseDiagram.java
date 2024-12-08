@@ -450,4 +450,16 @@ public class UseCaseDiagram {
     public void setName(String name) {
         this.name = name;
     }
+
+
+    /**
+     * Sets the Position of the use case diagram.
+     *
+     * @param x The X coordinate of the UseCase Position.
+     * @param y The Y coordinate of the UseCase Position.
+     */
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 }

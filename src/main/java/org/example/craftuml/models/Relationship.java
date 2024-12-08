@@ -414,7 +414,7 @@ public class Relationship {
      * @param x2 The x-coordinate of the end point of the arrow (tip).
      * @param y2 The y-coordinate of the end point of the arrow (tip).
      */
-    private void drawEmptyArrowhead(GraphicsContext gc, double x1, double y1, double x2, double y2)
+    public void drawEmptyArrowhead(GraphicsContext gc, double x1, double y1, double x2, double y2)
     {
         double angle = Math.atan2(y2 - y1, x2 - x1);
         double arrowLength = 15.0;
@@ -560,10 +560,10 @@ public class Relationship {
      * @param targetMaxX The maximum x-coordinate of the target class bounds.
      * @param targetMaxY The maximum y-coordinate of the target class bounds.
      */
-    private void drawMultiplicity(GraphicsContext gc, double x1, double y1, String sourceMultiplicity,
-                                  double x2, double y2, String targetMultiplicity,
-                                  double sourceMinX, double sourceMinY, double sourceMaxX, double sourceMaxY,
-                                  double targetMinX, double targetMinY, double targetMaxX, double targetMaxY) {
+    public void drawMultiplicity(GraphicsContext gc, double x1, double y1, String sourceMultiplicity,
+                                 double x2, double y2, String targetMultiplicity,
+                                 double sourceMinX, double sourceMinY, double sourceMaxX, double sourceMaxY,
+                                 double targetMinX, double targetMinY, double targetMaxX, double targetMaxY) {
         if ((sourceMultiplicity == null || Objects.equals(sourceMultiplicity, "0")) &&
                 (targetMultiplicity == null || Objects.equals(targetMultiplicity, "0"))) {
             return;
