@@ -52,48 +52,172 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Controller class for managing the use case dashboard in the Craft UML application.
+ * This class handles the user interface interactions for managing use case diagrams,
+ * including actions like creating, editing, and displaying use case diagrams, as well as
+ * exporting and handling file operations.
+ * It is responsible for updating the view based on user actions and interactions.
+ *
+ * The class manages the state of the application related to use case diagrams and provides
+ * methods for interacting with the user interface components like buttons, text fields,
+ * and diagrams. It ensures that the dashboard is updated correctly based on the user's
+ * selections and inputs.
+ */
+
 public class UseCaseDashboardController {
 
+    /**
+     * Default constructor for the `UseCaseDashboardController` class.
+     * This constructor initializes the controller for the use case dashboard in the Craft UML application.
+     * It is required by JavaFX for loading the controller associated with the FXML file.
+     */
+    public UseCaseDashboardController() {
+        // Default constructor
+    }
+
+    /**
+     * The canvas on which the use case diagram is drawn. This is where all elements
+     * of the diagram, such as actors, use cases, and associations, are rendered.
+     */
     @FXML
     private Canvas drawingCanvas;
 
+    /**
+     * A list view that displays information about the models (use cases, actors, etc.)
+     * associated with the current use case diagram.
+     */
     @FXML
     private ListView<String> modelInfoList;
 
-
+    /**
+     * A list containing the names of the models associated with the current use case diagram.
+     * This list is observable, meaning any changes are reflected in the user interface.
+     */
     private ObservableList<String> modelNames = FXCollections.observableArrayList();
+
+    /**
+     * A list containing the objects associated with the use case diagram.
+     * This list is observable and can be updated dynamically.
+     */
     private ObservableList<Object> modelObjects = FXCollections.observableArrayList();
+
+    /**
+     * The active use case diagram that the user is currently working with.
+     */
     private UseCaseDiagram activeDiagram;
-    private Actor activeActor;
-    private UseCase activeUseCase;
+
+    /**
+     * The current context menu that appears when interacting with elements on the diagram.
+     */
     private ContextMenu currentContextMenu;
 
+    /**
+     * The starting X coordinate when a drag operation begins.
+     */
     private double dragStartX = 0;
+
+    /**
+     * The starting Y coordinate when a drag operation begins.
+     */
     private double dragStartY = 0;
+
+    /**
+     * A flag indicating whether an element is being resized.
+     */
     private boolean resizing = false;
-    private double initialX, initialY;
+
+    /**
+     * The initial width of an element before resizing.
+     */
     private double initialWidth;
+
+    /**
+     * The initial height of an element before resizing.
+     */
     private double initialHeight;
+
+    /**
+     * A flag indicating whether the current diagram is saveable.
+     */
     private boolean isSaveable = false;
+
+    /**
+     * A list of actors associated with the current use case diagram.
+     */
     private List<Actor> actors = new ArrayList<>();
-    private ActorManager actorDAO = new ActorManager(actors);
+
+    /**
+     * The manager for the actors in the use case diagram.
+     */
+    private ActorManager actorManager = new ActorManager(actors);
+
+    /**
+     * A list of use cases associated with the current use case diagram.
+     */
     private List<UseCase> useCases = new ArrayList<>();
-    private UseCaseManager useCaseDAO = new UseCaseManager(useCases);
+
+    /**
+     * The manager for the use cases in the use case diagram.
+     */
+    private UseCaseManager useCaseManager = new UseCaseManager(useCases);
+
+    /**
+     * A list of associations between use cases and actors in the use case diagram.
+     */
     private List<Association> associations = new ArrayList<>();
-    private AssociationManager associationDAO = new AssociationManager(useCases,actors);
-    private Object draggedElement = null; // Keeps track of the current dragged element
+
+    /**
+     * The manager for the associations between use cases and actors.
+     */
+    private AssociationManager associationManager = new AssociationManager(useCases, actors);
+
+    /**
+     * The element currently being dragged on the canvas.
+     */
+    private Object draggedElement = null;
+
+    /**
+     * The X offset of the dragged element from its original position.
+     */
     private double dragOffsetX = 0;
+
+    /**
+     * The Y offset of the dragged element from its original position.
+     */
     private double dragOffsetY = 0;
 
+    /**
+     * A list of include relations between use cases.
+     */
     private List<UseCaseToUseCaseRelation> includeRelations = new ArrayList<>();
-    private List<UseCaseToUseCaseRelation> extendRelations = new ArrayList<>();
-    private UseCaseRelationManager useCaseRelationDAO = new UseCaseRelationManager(includeRelations,extendRelations);
 
+    /**
+     * A list of extend relations between use cases.
+     */
+    private List<UseCaseToUseCaseRelation> extendRelations = new ArrayList<>();
+
+    /**
+     * The manager for the relations between use cases, including include and extend relations.
+     */
+    private UseCaseRelationManager useCaseRelationManager = new UseCaseRelationManager(includeRelations, extendRelations);
+
+    /**
+     * The margin size for resizing elements on the canvas.
+     * Elements are considered to be resized when the mouse is within this margin.
+     */
     private static final double RESIZE_MARGIN = 10;
 
-    private Actor draggingActor = null; // Declare this at the class level
-    private UseCase draggingUseCase = null;
-
+    /**
+     * Initializes the dashboard by setting up resize handlers for the drawing canvas
+     * and configuring the ListView for displaying model information. The method also
+     * defines the cell factory for the ListView to customize the display of different
+     * types of model items (actors, use cases, associations, etc.).
+     * <p>
+     * The method updates the ListView by grouping related items into sections (e.g., actors,
+     * use cases, relationships) and applies different styles based on the type of item.
+     * </p>
+     */
     @FXML
     public void initialize() {
         initializeResizeHandlers();
@@ -140,6 +264,15 @@ public class UseCaseDashboardController {
         updateListView();
     }
 
+    /**
+     * Updates the ListView by clearing existing data and adding sections with related items.
+     * Sections include actors, use cases, and relationships. Each section is a collection
+     * of model items grouped together by type (e.g., actors, use cases, associations).
+     * <p>
+     * The method updates the ListView with sections, where each section is represented
+     * by a title followed by the corresponding items (actors, use cases, relationships).
+     * </p>
+     */
     private void updateListView() {
         modelNames.clear();
         modelObjects.clear();
@@ -210,7 +343,11 @@ public class UseCaseDashboardController {
         isSaveable = false;
     }
 
-
+    /**
+     * Initializes the resize handlers for the drawing canvas. This method sets up
+     * event handlers for mouse events that allow the user to resize elements within
+     * the canvas, including mouse moved, pressed, dragged, and released events.
+     */
 
     private void initializeResizeHandlers() {
         drawingCanvas.setOnMouseMoved(event -> handleMouseMove(event));
@@ -229,12 +366,31 @@ public class UseCaseDashboardController {
         });
     }
 
+    /**
+     * Checks if the mouse is currently over the diagram name area in the drawing canvas.
+     * The area is determined based on the X and Y coordinates of the mouse and the
+     * position of the diagram name.
+     *
+     * @param mouseX The X-coordinate of the mouse pointer.
+     * @param mouseY The Y-coordinate of the mouse pointer.
+     * @return True if the mouse is over the diagram name area, otherwise false.
+     */
     private boolean isMouseOverDiagramName(double mouseX, double mouseY) {
         // Check if the mouse is over the diagram name area
         return mouseX >= activeDiagram.getX() && mouseX <= activeDiagram.getX() + activeDiagram.getWidth() &&
                 mouseY >= activeDiagram.getY() && mouseY <= activeDiagram.getY() + 20;  // Adjust 20 for name area height
     }
 
+    /**
+     * Opens a dialog to allow the user to edit the name of the active diagram.
+     * The dialog contains a text field pre-filled with the current diagram name.
+     * The user can modify the name and click "Update" to apply the changes.
+     * <p>
+     * If the user cancels the operation or leaves the text field empty, no changes
+     * are made to the diagram name. After updating the name, the canvas is redrawn
+     * to reflect the change.
+     * </p>
+     */
     private void handleEditDiagramName() {
         if (activeDiagram == null) return;
 
@@ -278,6 +434,17 @@ public class UseCaseDashboardController {
         });
     }
 
+    /**
+     * Handles mouse move events on the drawing canvas. Changes the cursor to a
+     * resize cursor when the mouse is near the border of the active diagram.
+     * <p>
+     * The cursor will change to the `SE_RESIZE` type when hovering near the border
+     * of the diagram to indicate that resizing is possible. The default cursor is used
+     * when the mouse is not near the border.
+     * </p>
+     *
+     * @param event The mouse event triggered when the mouse is moved.
+     */
     private void handleMouseMove(MouseEvent event) {
         if (activeDiagram == null) return;
 
@@ -291,6 +458,17 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Handles mouse press events on the drawing canvas. Begins the resizing process
+     * when the mouse is pressed near the border of the active diagram.
+     * <p>
+     * This method detects if the mouse press is near the border of the active diagram,
+     * and if so, it initializes the resizing process by storing the current mouse position
+     * and the initial dimensions of the diagram.
+     * </p>
+     *
+     * @param event The mouse event triggered when the mouse is pressed.
+     */
     private void handleMousePressed(MouseEvent event) {
         if (activeDiagram == null) return;
 
@@ -307,6 +485,17 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Handles mouse drag events on the drawing canvas. Resizes the active diagram
+     * as the mouse is dragged when resizing is in progress.
+     * <p>
+     * This method calculates the difference between the current mouse position and the
+     * starting position when the resizing began. The active diagram's width and height
+     * are then adjusted accordingly.
+     * </p>
+     *
+     * @param event The mouse event triggered when the mouse is dragged.
+     */
     private void handleMouseDragged(MouseEvent event) {
         if (resizing && activeDiagram != null)
         {
@@ -320,9 +509,30 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Handles mouse release events on the drawing canvas. Ends the resizing process.
+     * <p>
+     * This method is called when the mouse button is released, indicating the end
+     * of the resizing operation. No further actions are taken in this method.
+     * </p>
+     *
+     * @param event The mouse event triggered when the mouse button is released.
+     */
     private void handleMouseReleased(MouseEvent event) {
     }
 
+    /**
+     * Determines if the mouse cursor is near the border of the active diagram.
+     * <p>
+     * This method checks if the mouse coordinates are within a defined margin from the
+     * bottom-right corner of the active diagram. This is used to detect when the user
+     * is hovering near the corner of the diagram for resizing purposes.
+     * </p>
+     *
+     * @param mouseX The X coordinate of the mouse pointer.
+     * @param mouseY The Y coordinate of the mouse pointer.
+     * @return true if the mouse is within the resize margin of the diagram's bottom-right corner, false otherwise.
+     */
     private boolean isNearBorder(double mouseX, double mouseY) {
         return mouseX >= activeDiagram.getX() + activeDiagram.getWidth() - RESIZE_MARGIN
                 && mouseX <= activeDiagram.getX() + activeDiagram.getWidth() + RESIZE_MARGIN
@@ -330,6 +540,16 @@ public class UseCaseDashboardController {
                 && mouseY <= activeDiagram.getY() + activeDiagram.getHeight() + RESIZE_MARGIN;
     }
 
+    /**
+     * Handles the action of adding a new use case diagram by displaying a confirmation
+     * dialog if there is an active diagram. The user is prompted to confirm if they
+     * want to create a new diagram, which would delete the existing one.
+     * <p>
+     * If confirmed, a new use case diagram is created, and the existing diagram is discarded.
+     * </p>
+     *
+     * @param actionEvent The action event triggered when the "Add Use Case Diagram" button is clicked.
+     */
 
     @FXML
     public void handleAddUseCaseDiagram(ActionEvent actionEvent) {
@@ -359,6 +579,15 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Displays a dialog for creating a new use case diagram by allowing the user
+     * to enter a name for the diagram. The new diagram is then created and positioned
+     * at the top-center of the canvas.
+     * <p>
+     * If the user cancels or does not enter a name, no new diagram is created. Upon
+     * successful creation, the canvas is cleared and the new diagram is drawn.
+     * </p>
+     */
     public void handleUseCaseDiagram() {
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("New Use Case Diagram");
@@ -438,6 +667,14 @@ public class UseCaseDashboardController {
         });
     }
 
+    /**
+     * Clears the canvas and redraws the active diagram. Also clears the lists
+     * of actors, use cases, and relationships.
+     * <p>
+     * This method is called when a new diagram is created, and it ensures that
+     * the canvas is cleared and reset for the new diagram.
+     * </p>
+     */
     private void redrawCanvasClearAll() {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight()); // Clear the canvas
@@ -449,6 +686,14 @@ public class UseCaseDashboardController {
         includeRelations.clear();
     }
 
+    /**
+     * Clears the canvas and redraws the active diagram, actors, use cases, associations,
+     * and relationships. This is used to update the canvas view.
+     * <p>
+     * It iterates through all relevant elements (actors, use cases, associations, and relations)
+     * and draws them on the canvas to reflect the current state of the diagram.
+     * </p>
+     */
     private void redrawCanvas() {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight()); // Clear the canvas
@@ -464,21 +709,31 @@ public class UseCaseDashboardController {
         }
         for (Association association : associations)
         {
-            associationDAO.drawAssociationLine(association.getActor(),association.getUseCase(),drawingCanvas);
+            associationManager.drawAssociationLine(association.getActor(),association.getUseCase(),drawingCanvas);
         }
         for (UseCaseToUseCaseRelation include : includeRelations)
         {
-            useCaseRelationDAO.drawUseCaseRelation(include.getUseCase1(),include.getUseCase2(),include.getRelationType(),drawingCanvas.getGraphicsContext2D());
+            useCaseRelationManager.drawUseCaseRelation(include.getUseCase1(),include.getUseCase2(),include.getRelationType(),drawingCanvas.getGraphicsContext2D());
         }
         for (UseCaseToUseCaseRelation extend : extendRelations)
         {
-            useCaseRelationDAO.drawUseCaseRelation(extend.getUseCase1(),extend.getUseCase2(),extend.getRelationType(),drawingCanvas.getGraphicsContext2D());
+            useCaseRelationManager.drawUseCaseRelation(extend.getUseCase1(),extend.getUseCase2(),extend.getRelationType(),drawingCanvas.getGraphicsContext2D());
         }
         updateListView();
         isSaveable = false;
 
     }
 
+    /**
+     * Draws the use case diagram on the canvas.
+     * <p>
+     * This method draws a rectangle representing the use case diagram, including the background, border,
+     * and the diagram's name centered at the top. The rectangle's position and size are determined by
+     * the properties of the provided UseCaseDiagram object.
+     * </p>
+     *
+     * @param diagram The UseCaseDiagram object containing the diagram's properties (position, size, name) to be drawn.
+     */
     private void drawUseCaseDiagram(UseCaseDiagram diagram) {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
         gc.setFill(Color.WHITE); // Background color for the rectangle
@@ -498,7 +753,16 @@ public class UseCaseDashboardController {
         gc.fillText(diagram.getName(), textX, textY);
     }
 
-
+    /**
+     * Handles the action of adding a new actor to the active use case diagram.
+     * <p>
+     * This method displays a dialog for the user to enter the actor's name, ensures the name follows
+     * a naming convention (UpperCamelCase), and checks for duplicate actor names. If valid, the actor
+     * is added to the diagram and the canvas is redrawn.
+     * </p>
+     *
+     * @throws IllegalArgumentException if the actor name is invalid or if there is a duplicate name.
+     */
     @FXML
     private void handleAddActor() {
         if (!isActiveDiagramSelected()) {
@@ -527,12 +791,12 @@ public class UseCaseDashboardController {
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(actorName -> {
             // Check for duplicate actor name using ActorDAO
-            if (actorDAO.isDuplicateActorName(actorName)) {
+            if (actorManager.isDuplicateActorName(actorName)) {
                 // Show error message
                 showErrorMessage("An actor with this name already exists.");
             } else {
                 // Add the actor using ActorDAO
-                actorDAO.addActor(actorName);
+                actorManager.addActor(actorName);
 
                 redrawCanvas();
                 enableInteractivity();
@@ -540,6 +804,16 @@ public class UseCaseDashboardController {
         });
     }
 
+    /**
+     * Edits the name of an existing actor in the diagram.
+     * <p>
+     * This method displays a dialog to edit the selected actor's name. It checks if the new name
+     * is unique and updates the actor's name if valid. The canvas is then redrawn with the updated actor name.
+     * </p>
+     *
+     * @param actor The actor whose name is to be edited.
+     * @throws IllegalArgumentException if the new actor name is invalid or duplicates an existing name.
+     */
     private void editActorName(Actor actor) {
         TextInputDialog dialog = new TextInputDialog(actor.getName());
         dialog.setTitle("Edit Actor Name");
@@ -549,15 +823,25 @@ public class UseCaseDashboardController {
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(newName -> {
             // Check for duplicate name, excluding the current actor
-            if (actorDAO.isDuplicateNameExcludingActor(newName, actor)) { // Delegating to ActorDAO
+            if (actorManager.isDuplicateNameExcludingActor(newName, actor)) { // Delegating to ActorDAO
                 showErrorMessage("An actor with this name already exists.");
             } else {
-                actorDAO.updateActorName(actor, newName); // Delegating to ActorDAO
+                actorManager.updateActorName(actor, newName); // Delegating to ActorDAO
                 redrawCanvas();
             }
         });
     }
 
+    /**
+     * Handles the action of adding a new use case to the active use case diagram.
+     * <p>
+     * This method displays a dialog for the user to enter the use case's name, checks if the name follows
+     * a valid naming convention, and calculates the appropriate position for the new use case within the canvas.
+     * If valid, the use case is added to the diagram and the canvas is redrawn.
+     * </p>
+     *
+     * @throws IllegalArgumentException if the use case name is invalid or if there is a duplicate name.
+     */
     @FXML
     private void handleAddUseCase() {
         if (!isActiveDiagramSelected()) {
@@ -582,11 +866,11 @@ public class UseCaseDashboardController {
         result.ifPresent(useCaseName -> {
             try {
                 // Calculate position within canvas bounds
-                double x = 50 + (useCaseDAO.getUseCases().size() % 5) * 120;
-                double y = 50 + (useCaseDAO.getUseCases().size() / 5) * 80;
+                double x = 50 + (useCaseManager.getUseCases().size() % 5) * 120;
+                double y = 50 + (useCaseManager.getUseCases().size() / 5) * 80;
 
                 // Add the new use case
-                UseCase newUseCase = useCaseDAO.addUseCase(useCaseName, x, y,activeDiagram);
+                UseCase newUseCase = useCaseManager.addUseCase(useCaseName, x, y,activeDiagram);
 
                 // Redraw canvas and enable features
                 redrawCanvas();
@@ -598,6 +882,17 @@ public class UseCaseDashboardController {
         });
     }
 
+    /**
+     * Edits the name of an existing use case in the active use case diagram.
+     * <p>
+     * This method displays a dialog to allow the user to edit the name of a selected use case. The name is updated
+     * via the UseCaseManager. If an invalid name is provided, an error message is shown. After a successful update,
+     * the canvas is redrawn to reflect the changes.
+     * </p>
+     *
+     * @param useCase The UseCase object whose name is to be edited.
+     * @throws IllegalArgumentException if the new name is invalid or any error occurs during the update process.
+     */
     private void editUseCaseName(UseCase useCase) {
         TextInputDialog dialog = new TextInputDialog(useCase.getName());
         dialog.setTitle("Edit Use Case Name");
@@ -608,7 +903,7 @@ public class UseCaseDashboardController {
         result.ifPresent(newName -> {
             try {
                 // Update name via DAO
-                useCaseDAO.editUseCaseName(useCase, newName);
+                useCaseManager.editUseCaseName(useCase, newName);
 
                 // Redraw canvas
                 redrawCanvas();
@@ -618,25 +913,56 @@ public class UseCaseDashboardController {
         });
     }
 
+    /**
+     * Draws the specified element (Actor or UseCase) on the canvas.
+     * <p>
+     * This method checks the type of the provided element. If it is an instance of Actor, it delegates the drawing
+     * to the ActorManager. If it is an instance of UseCase, it delegates the drawing to the UseCaseManager. If the element
+     * is of any other type, an exception is thrown.
+     * </p>
+     *
+     * @param element The element (either Actor or UseCase) to be drawn on the canvas.
+     * @throws IllegalArgumentException if the element type is not supported.
+     */
     private void drawElement(Object element) {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
 
         if (element instanceof Actor) {
             Actor actor = (Actor) element;
-            actorDAO.drawActor(gc, actor); // Delegate drawing to ActorDAO
+            actorManager.drawActor(gc, actor); // Delegate drawing to ActorDAO
         } else if (element instanceof UseCase) {
             UseCase useCase = (UseCase) element;
-            useCaseDAO.drawUseCase(gc, useCase); // Delegate drawing to UseCaseDAO
+            useCaseManager.drawUseCase(gc, useCase); // Delegate drawing to UseCaseDAO
         } else {
             throw new IllegalArgumentException("Unsupported element type: " + element.getClass().getSimpleName());
         }
     }
 
+    /**
+     * Checks if a use case diagram is currently active.
+     * <p>
+     * This method determines if there is an active use case diagram. If the active diagram is null, it returns false.
+     * Otherwise, it returns true, indicating that a use case diagram is active.
+     * </p>
+     *
+     * @return true if a use case diagram is active, false otherwise.
+     */
     private boolean isActiveDiagramSelected() {
         // Replace with your actual logic to check if a use case diagram is active
         return activeDiagram != null ;
     }
 
+    /**
+     * Checks if a given name follows the UpperCamelCase naming convention.
+     * <p>
+     * This method uses a regular expression to validate whether the provided name follows the UpperCamelCase convention.
+     * The name must start with an uppercase letter, followed by lowercase letters or digits, and may have additional words
+     * starting with an uppercase letter. Spaces between words are allowed but each word must follow the camel case format.
+     * </p>
+     *
+     * @param name The name to be checked.
+     * @return true if the name follows the UpperCamelCase convention, false otherwise.
+     */
     private boolean isUpperCamelCase(String name) {
         if (name == null || name.isEmpty()) {
             return false;
@@ -644,6 +970,15 @@ public class UseCaseDashboardController {
         String regex = "([A-Z][a-z0-9]*)+(\\s[A-Z][a-z0-9]*)*"; // UpperCamelCase regex
         return name.matches(regex);
     }
+
+    /**
+     * Enables interactivity on the canvas for drag-and-drop functionality and context menus.
+     * <p>
+     * This method listens for mouse events on the canvas, including mouse movement, pressing, dragging, and releasing.
+     * It changes the cursor when hovering over draggable elements, allows elements to be dragged, and handles right-click
+     * events to show a context menu for actors and use cases.
+     * </p>
+     */
     private void enableInteractivity() {
         // Mouse moved: Change cursor to move symbol when over a draggable element
         drawingCanvas.setOnMouseMoved(event -> {
@@ -712,12 +1047,21 @@ public class UseCaseDashboardController {
         });
     }
 
+    /**
+     * Handles the right-click event on the canvas to show the appropriate context menu.
+     * <p>
+     * This method checks if the user right-clicked on an actor or use case. If an actor is clicked, it shows an actor-specific
+     * context menu. If a use case is clicked, it shows a use case-specific context menu.
+     * </p>
+     *
+     * @param event The MouseEvent that triggered the right-click action.
+     */
     private void handleRightClick(MouseEvent event) {
         double clickX = event.getX();
         double clickY = event.getY();
 
         // Check if an actor was clicked
-        Actor clickedActor = actorDAO.findActorByPosition(clickX, clickY);
+        Actor clickedActor = actorManager.findActorByPosition(clickX, clickY);
         if (clickedActor != null) {
             showContextMenu(clickedActor, event.getScreenX(), event.getScreenY(), "actor");
             event.consume(); // Prevent further processing
@@ -725,13 +1069,22 @@ public class UseCaseDashboardController {
         }
 
         // Use UseCaseDAO to check if a use case was clicked
-        UseCase clickedUseCase = useCaseDAO.findClickedUseCase(clickX, clickY);
+        UseCase clickedUseCase = useCaseManager.findClickedUseCase(clickX, clickY);
         if (clickedUseCase != null) {
             showContextMenu(clickedUseCase, event.getScreenX(), event.getScreenY(), "useCase");
             event.consume(); // Prevent further processing
         }
     }
 
+    /**
+     * Handles the mouse press event on the canvas to detect which element is being clicked or dragged.
+     * <p>
+     * This method checks if the mouse was pressed on an actor or use case. If so, it initializes the dragging process by
+     * calculating the offset between the mouse position and the element's position.
+     * </p>
+     *
+     * @param event The MouseEvent that triggered the mouse press action.
+     */
     private void handleMousePress(MouseEvent event) {
         draggedElement = null;
         dragOffsetX = 0;
@@ -753,6 +1106,18 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Displays a context menu for editing or deleting an actor or use case when right-clicked.
+     * <p>
+     * This method creates a context menu with "Edit" and "Delete" options. The "Edit" option opens a dialog to edit the
+     * element's name, and the "Delete" option removes the element from the diagram and updates the canvas.
+     * </p>
+     *
+     * @param element The element (actor or use case) for which the context menu is shown.
+     * @param screenX The screen X-coordinate of the right-click event.
+     * @param screenY The screen Y-coordinate of the right-click event.
+     * @param type The type of the element ("actor" or "useCase").
+     */
     private void showContextMenu(Object element, double screenX, double screenY, String type) {
 
         if (currentContextMenu != null) {
@@ -798,11 +1163,30 @@ public class UseCaseDashboardController {
         contextMenu.getItems().addAll(editItem, deleteItem);
         contextMenu.show(drawingCanvas, screenX, screenY);
     }
+
+    /**
+     * Removes all associations involving the specified actor from the diagram.
+     * <p>
+     * This method removes all associations (e.g., interactions) that involve the specified actor. It is called when
+     * an actor is deleted from the diagram.
+     * </p>
+     *
+     * @param actor The actor whose associations are to be removed.
+     */
     private void removeActorAssociations(Actor actor) {
         // Remove all associations involving the actor
         associations.removeIf(association -> association.getActor().equals(actor));
     }
 
+    /**
+     * Removes all associations involving the specified use case from the diagram.
+     * <p>
+     * This method removes all associations (e.g., interactions, include, and extend relations) that involve the specified
+     * use case. It is called when a use case is deleted from the diagram.
+     * </p>
+     *
+     * @param useCase The use case whose associations are to be removed.
+     */
     private void removeUseCaseAssociations(UseCase useCase) {
         // Remove all associations involving the use case
         associations.removeIf(association -> association.getUseCase().equals(useCase));
@@ -817,13 +1201,27 @@ public class UseCaseDashboardController {
         );
     }
 
+    /**
+     * Closes the currently displayed context menu if one is visible.
+     * <p>
+     * This method hides any active context menu from the canvas.
+     * </p>
+     */
     private void closeContextMenu() {
         if (currentContextMenu != null) {
             currentContextMenu.hide();
         }
     }
 
-
+    /**
+     * Displays an error message in an alert dialog.
+     * <p>
+     * This method shows an alert with an error message, allowing the user to be informed of any issues that occur during
+     * the execution of actions on the diagram.
+     * </p>
+     *
+     * @param message The error message to be displayed.
+     */
     private void showErrorMessage(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -832,6 +1230,14 @@ public class UseCaseDashboardController {
         alert.showAndWait();
     }
 
+    /**
+     * Deletes a UseCase and removes any associated relations with actors or other use cases.
+     * This method ensures that all associations involving the specified use case, including
+     * relations with actors and use case-to-use case relationships (include and extend),
+     * are removed before the use case is deleted from the list.
+     *
+     * @param useCase The UseCase to be deleted.
+     */
     private void deleteUseCase(UseCase useCase) {
         useCases.remove(useCase);
 
@@ -851,6 +1257,12 @@ public class UseCaseDashboardController {
         );
     }
 
+    /**
+     * Handles the addition of a new association between an actor and a use case.
+     * This method checks if there are enough actors and use cases to form an association,
+     * and if so, it opens a selection window for the user to choose the specific actor
+     * and use case to associate. If not enough elements are available, an error message is displayed.
+     */
     @FXML
     private void handleAddAssociation() {
         if (activeDiagram != null) {
@@ -864,6 +1276,12 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Opens a window for the user to select an actor and a use case to associate.
+     * This method creates a combo box for both actors and use cases, allowing the user
+     * to select which elements to associate. Once confirmed, an association is created,
+     * and the canvas is redrawn.
+     */
     private void openSelectionWindow() {
         Stage selectionStage = new Stage();
         selectionStage.setTitle("Select Actor and Use Case");
@@ -904,8 +1322,8 @@ public class UseCaseDashboardController {
                         .orElse(null);
 
                 if (selectedActor != null && selectedUseCase != null) {
-                    if (associationDAO.createAssociation(selectedUseCase, selectedActor, associations)) {
-                        associationDAO.drawAssociationLine(selectedActor, selectedUseCase, drawingCanvas);
+                    if (associationManager.createAssociation(selectedUseCase, selectedActor, associations)) {
+                        associationManager.drawAssociationLine(selectedActor, selectedUseCase, drawingCanvas);
                         redrawCanvas();
                     } else {
                         showAlert("Association Exists", "This actor is already associated with the selected use case.");
@@ -939,12 +1357,24 @@ public class UseCaseDashboardController {
         selectionStage.show();
     }
 
-    // Helper method to enable/disable confirm button based on selections
+    /**
+     * Helper method to enable or disable the confirm button in the selection window
+     * based on whether both an actor and a use case are selected.
+     *
+     * @param actorComboBox The combo box containing the list of actors.
+     * @param useCaseComboBox The combo box containing the list of use cases.
+     * @param confirmButton The confirm button to be enabled/disabled.
+     */
     private void checkSelection(ComboBox<String> actorComboBox, ComboBox<String> useCaseComboBox, Button confirmButton) {
         confirmButton.setDisable(actorComboBox.getValue() == null || useCaseComboBox.getValue() == null);
     }
 
-
+    /**
+     * Displays an error alert with a specified title and message.
+     *
+     * @param title The title of the alert.
+     * @param message The content message of the alert.
+     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -953,6 +1383,11 @@ public class UseCaseDashboardController {
         alert.showAndWait();
     }
 
+    /**
+     * Handles the addition of an "include" relationship between use cases.
+     * This method opens the use case selection window for users to select
+     * use cases to create an "include" relationship between them.
+     */
     @FXML
     private void handleAddInclude() {
         if (activeDiagram != null) {
@@ -964,6 +1399,11 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Handles the addition of an "extend" relationship between use cases.
+     * This method opens the use case selection window for users to select
+     * use cases to create an "extend" relationship between them.
+     */
     @FXML
     private void handleAddExtend() {
         if (activeDiagram != null) {
@@ -975,6 +1415,12 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Opens a window that allows the user to select two use cases and create a relation (either "include" or "extend").
+     * The relation type is passed as an argument to differentiate between the two.
+     *
+     * @param relationType The type of relation to be created ("include" or "extend").
+     */
     private void openUseCaseSelectionWindow(String relationType) {
         // Create a new Stage (window)
         Stage selectionStage = new Stage();
@@ -1052,6 +1498,15 @@ public class UseCaseDashboardController {
         selectionStage.show();
     }
 
+    /**
+     * Checks if both use cases are selected and whether they can have the specified relation type.
+     * It disables the confirm button if any conditions are not met (e.g., the use cases are the same or incompatible relations exist).
+     *
+     * @param comboBox1 The first ComboBox for selecting a use case.
+     * @param comboBox2 The second ComboBox for selecting a use case.
+     * @param confirmButton The button that confirms the selection of the relation.
+     * @param relationType The type of relation ("include" or "extend") to be established.
+     */
     private void checkUseCaseSelection(ComboBox<String> comboBox1, ComboBox<String> comboBox2, Button confirmButton, String relationType) {
         String useCaseName1 = comboBox1.getValue();
         String useCaseName2 = comboBox2.getValue();
@@ -1072,14 +1527,14 @@ public class UseCaseDashboardController {
                         .orElse(null);
 
                 if (relationType.equals("include")) {
-                    if (useCaseRelationDAO.hasExtendRelation(useCase1, useCase2)) {
+                    if (useCaseRelationManager.hasExtendRelation(useCase1, useCase2)) {
                         showAlert("Error", "An <<extend>> relation already exists between these use cases.");
                         confirmButton.setDisable(true);
                     } else {
                         confirmButton.setDisable(false);
                     }
                 } else if (relationType.equals("extend")) {
-                    if (useCaseRelationDAO.hasIncludeRelation(useCase1, useCase2)) {
+                    if (useCaseRelationManager.hasIncludeRelation(useCase1, useCase2)) {
                         showAlert("Error", "An <<include>> relation already exists between these use cases.");
                         confirmButton.setDisable(true);
                     } else {
@@ -1092,9 +1547,16 @@ public class UseCaseDashboardController {
         }
     }
 
-
+    /**
+     * Creates a relation between two selected use cases based on the relation type.
+     * If the relation cannot be created, an error message is shown.
+     *
+     * @param useCase1 The first use case involved in the relation.
+     * @param useCase2 The second use case involved in the relation.
+     * @param relationType The type of relation to be created ("include" or "extend").
+     */
     private void createUseCaseRelation(UseCase useCase1, UseCase useCase2, String relationType) {
-        boolean success = useCaseRelationDAO.createRelation(useCase1, useCase2, relationType);
+        boolean success = useCaseRelationManager.createRelation(useCase1, useCase2, relationType);
 
         if (!success) {
             if (useCase1.equals(useCase2)) {
@@ -1108,6 +1570,13 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Updates the options in the second ComboBox based on the selected items in both ComboBoxes.
+     * Ensures that a selected use case from the first ComboBox is not available for selection in the second.
+     *
+     * @param useCaseComboBox1 The first ComboBox for selecting a use case.
+     * @param useCaseComboBox2 The second ComboBox for selecting a use case.
+     */
     private void updateComboBoxOptions(ComboBox<String> useCaseComboBox1, ComboBox<String> useCaseComboBox2) {
         String selectedUseCase1 = useCaseComboBox1.getValue();
         String selectedUseCase2 = useCaseComboBox2.getValue();
@@ -1128,8 +1597,10 @@ public class UseCaseDashboardController {
         useCaseComboBox2.setItems(options);
     }
 
-
-    // New project creation logic (Placeholder method)
+    /**
+     * Handles the creation of a new project. If there are unsaved changes, the user is prompted for confirmation before proceeding.
+     * If confirmed, the workspace is cleared to create a new project.
+     */
     public void handleNewProject() {
         if(isSaveable)
         {
@@ -1151,6 +1622,11 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Clears the workspace by resetting all diagram elements and variables to their default states.
+     * This includes clearing the list of actors, use cases, associations, and relationships.
+     * The canvas is also cleared, and any list items in the model info are removed.
+     */
     private void clearWorkspace() {
         activeDiagram = null;
 
@@ -1173,6 +1649,15 @@ public class UseCaseDashboardController {
             modelInfoList.getItems().clear();
         }
     }
+
+    /**
+     * Opens a project by selecting an XML file, reading its content, and loading the use case diagram
+     * with actors, use cases, associations, and relationships. If the file is successfully loaded,
+     * the diagram, actors, use cases, and relationships are populated, and the canvas is redrawn.
+     *
+     * This method is called when the button is clicked.
+     * It is connected to the FXML file.
+     */
     @FXML
     public void handleOpenProject() {
         FileChooser fileChooser = new FileChooser();
@@ -1288,6 +1773,12 @@ public class UseCaseDashboardController {
         }
     }
 
+    /**
+     * Finds an actor by name from the list of actors.
+     *
+     * @param name The name of the actor to find.
+     * @return The actor object if found, otherwise null.
+     */
     private Actor findActorByName(String name) {
         for (Actor actor : actors) {
             if (actor.getName().equals(name)) {
@@ -1297,6 +1788,12 @@ public class UseCaseDashboardController {
         return null;
     }
 
+    /**
+     * Finds a use case by name from the list of use cases.
+     *
+     * @param name The name of the use case to find.
+     * @return The use case object if found, otherwise null.
+     */
     private UseCase findUseCaseByName(String name) {
         for (UseCase useCase : useCases) {
             if (useCase.getName().equals(name)) {
@@ -1306,7 +1803,11 @@ public class UseCaseDashboardController {
         return null;
     }
 
-
+    /**
+     * Saves the current use case diagram and its elements (actors, use cases, associations, relationships)
+     * to an XML file selected by the user.
+     *
+     */
     @FXML
     public void handleSaveProject() {
 
@@ -1392,8 +1893,10 @@ public class UseCaseDashboardController {
 
     }
 
-
-    // Exit the application (Placeholder method)
+    /**
+     * Handles the exit functionality for the application by displaying a confirmation dialog.
+     * If the user confirms, the application will exit, otherwise it will remain open.
+     */
     public void handleExit() {
         Alert exitConfirmation = new Alert(Alert.AlertType.CONFIRMATION);
         exitConfirmation.setTitle("Exit Application");
@@ -1409,7 +1912,11 @@ public class UseCaseDashboardController {
         }
     }
 
-
+    /**
+     * Handles the export of the diagram as an image file. The diagram is captured as a snapshot,
+     * cropped to exclude transparent areas, and then saved to a file specified by the user.
+     * The user can select from various image formats such as PNG, JPEG, or BMP.
+     */
     @FXML
     public void handleExportDiagram() {
         WritableImage fullSnapshot = new WritableImage((int) drawingCanvas.getWidth(), (int) drawingCanvas.getHeight());
@@ -1444,6 +1951,13 @@ public class UseCaseDashboardController {
             }
         }
     }
+
+    /**
+     * Crops the snapshot of the canvas by identifying the non-transparent pixels and adjusting the boundaries.
+     *
+     * @param fullSnapshot The full snapshot of the canvas to be cropped.
+     * @return A cropped version of the snapshot containing only the relevant content.
+     */
     private WritableImage cropCanvasSnapshot(WritableImage fullSnapshot) {
         PixelReader pixelReader = fullSnapshot.getPixelReader();
         int minX = (int) fullSnapshot.getWidth();
@@ -1479,6 +1993,13 @@ public class UseCaseDashboardController {
         }
         return croppedImage;
     }
+
+    /**
+     * Retrieves the file extension from the given file name.
+     *
+     * @param fileName The name of the file.
+     * @return The file extension as a string (e.g., "png", "jpg", "bmp").
+     */
     private String getFileExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
@@ -1486,6 +2007,13 @@ public class UseCaseDashboardController {
         }
         return "";
     }
+
+    /**
+     * Displays an error alert with the provided title and message.
+     *
+     * @param title The title of the error alert.
+     * @param message The message to be displayed in the alert.
+     */
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -1493,6 +2021,10 @@ public class UseCaseDashboardController {
         alert.showAndWait();
     }
 
+    /**
+     * Displays information about the application in an "About" dialog.
+     * The dialog includes the application's name, creators, version, and website.
+     */
     public void handleAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About Craft UML");
@@ -1533,6 +2065,11 @@ public class UseCaseDashboardController {
         alert.showAndWait();
     }
 
+    /**
+     * Sets the currently active UseCaseDiagram.
+     *
+     * @param diagram The UseCaseDiagram to set as the active diagram.
+     */
     public void setActiveDiagram(UseCaseDiagram diagram) {
         this.activeDiagram = diagram;
     }

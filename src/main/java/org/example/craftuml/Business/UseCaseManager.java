@@ -10,19 +10,49 @@ import org.example.craftuml.models.UseCaseDiagrams.UseCaseDiagram;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Manages a collection of `UseCase` objects within a `UseCaseDiagram`.
+ * Provides functionality for adding, editing, drawing, and detecting interactions with use cases in the diagram.
+ */
+
 public class UseCaseManager {
 
+    /**
+     * A list of `UseCase` objects representing the use cases in the diagram.
+     * Used to store and manage all the use cases.
+     */
     private List<UseCase> useCases = new ArrayList<>();
 
-    // Constructor to initialize the actors list
+    /**
+     * Constructor to initialize the `UseCaseManager` with a pre-existing list of use cases.
+     *
+     * @param useCases A list of `UseCase` objects to initialize the manager.
+     */
     public UseCaseManager(List<UseCase> useCases) {
         this.useCases = useCases;
     }
 
+    /**
+     * Checks if a use case name already exists in the list of use cases.
+     *
+     * @param name The name to check for duplicates.
+     * @return `true` if a use case with the specified name exists, `false` otherwise.
+     */
     public boolean isDuplicateName(String name) {
         return useCases.stream().anyMatch(useCase -> useCase.getName().equalsIgnoreCase(name));
     }
 
+    /**
+     * Adds a new use case to the diagram with the specified name and position.
+     * The method ensures that the use case is not out of bounds and does not duplicate an existing name.
+     *
+     * @param name The name of the new use case.
+     * @param x The x-coordinate of the new use case's position.
+     * @param y The y-coordinate of the new use case's position.
+     * @param activeDiagram The active diagram in which the use case will be added.
+     * @return The created `UseCase` object.
+     * @throws IllegalArgumentException if a use case with the given name already exists.
+     */
     public UseCase addUseCase(String name, double x, double y, UseCaseDiagram activeDiagram) throws IllegalArgumentException {
         if (isDuplicateName(name)) {
             throw new IllegalArgumentException("A use case with this name already exists.");
@@ -45,7 +75,14 @@ public class UseCaseManager {
         return useCase;
     }
 
-
+    /**
+     * Edits the name of an existing use case.
+     * Throws an exception if the new name is empty or if it conflicts with an existing use case name.
+     *
+     * @param useCase The `UseCase` to edit.
+     * @param newName The new name for the use case.
+     * @throws IllegalArgumentException if the new name is empty or already taken by another use case.
+     */
     public void editUseCaseName(UseCase useCase, String newName) throws IllegalArgumentException {
         if (newName == null || newName.trim().isEmpty()) {
             throw new IllegalArgumentException("Use case name cannot be empty.");
@@ -62,10 +99,23 @@ public class UseCaseManager {
         useCase.setName(newName);
     }
 
+    /**
+     * Retrieves the list of all use cases managed by this manager.
+     *
+     * @return A list of `UseCase` objects.
+     */
     public List<UseCase> getUseCases() {
         return useCases;
     }
 
+    /**
+     * Draws a `UseCase` object on the given `GraphicsContext`.
+     * It calculates the required size for the oval shape based on the name of the use case
+     * and positions the text in the center of the oval.
+     *
+     * @param gc The `GraphicsContext` used for drawing.
+     * @param useCase The `UseCase` object to be drawn.
+     */
     public void drawUseCase(GraphicsContext gc, UseCase useCase) {
         String name = useCase.getName();
 
@@ -98,6 +148,14 @@ public class UseCaseManager {
         gc.fillText(name, centerX - textWidth / 2, centerY);
     }
 
+    /**
+     * Checks if a point is hovering over any `UseCase` in the provided list.
+     *
+     * @param x The x-coordinate of the point to check.
+     * @param y The y-coordinate of the point to check.
+     * @param useCases The list of `UseCase` objects to check against.
+     * @return `true` if the point is hovering over any `UseCase`, `false` otherwise.
+     */
     public static boolean isHoveringOverUseCase(double x, double y, List<UseCase> useCases) {
         for (UseCase useCase : useCases) {
             if (x >= useCase.getX() && x <= useCase.getX() + useCase.getWidth() &&
@@ -109,10 +167,11 @@ public class UseCaseManager {
     }
 
     /**
-     * Finds a UseCase by clicking position.
+     * Finds a `UseCase` by the click position.
+     *
      * @param x The x-coordinate of the click.
      * @param y The y-coordinate of the click.
-     * @return The clicked UseCase if found, otherwise null.
+     * @return The `UseCase` object clicked, or `null` if no `UseCase` was clicked.
      */
     public UseCase findClickedUseCase(double x, double y) {
         for (UseCase useCase : useCases) {
@@ -124,6 +183,14 @@ public class UseCaseManager {
         return null;
     }
 
+    /**
+     * Finds the `UseCase` object that corresponds to the clicked position in the list of use cases.
+     *
+     * @param x The x-coordinate of the click.
+     * @param y The y-coordinate of the click.
+     * @param useCases The list of `UseCase` objects to check against.
+     * @return The `UseCase` object clicked, or `null` if no `UseCase` was clicked.
+     */
     public static UseCase getClickedUseCase(double x, double y, List<UseCase> useCases) {
         for (UseCase useCase : useCases) {
             if (x >= useCase.getX() && x <= useCase.getX() + useCase.getWidth() &&
@@ -134,6 +201,16 @@ public class UseCaseManager {
         return null;
     }
 
+    /**
+     * Updates the position of a `UseCase` based on the mouse position and offset, ensuring it stays within the bounds of the active diagram.
+     *
+     * @param useCase The `UseCase` object to move.
+     * @param mouseX The x-coordinate of the mouse.
+     * @param mouseY The y-coordinate of the mouse.
+     * @param offsetX The x offset from the original position of the `UseCase`.
+     * @param offsetY The y offset from the original position of the `UseCase`.
+     * @param activeDiagram The `UseCaseDiagram` to which the `UseCase` belongs, used for boundary checks.
+     */
     public static void updateUseCasePosition(UseCase useCase, double mouseX, double mouseY, double offsetX, double offsetY,
                                              UseCaseDiagram activeDiagram) {
         double newX = mouseX - offsetX;
