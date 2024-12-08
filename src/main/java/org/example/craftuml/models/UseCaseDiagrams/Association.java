@@ -21,6 +21,15 @@ public class Association {
     public Association(Actor actor, UseCase useCase) {
         this.actor = actor;
         this.useCase = useCase;
+        this.startX = Double.NaN;
+        this.startY = Double.NaN;
+        this.endX = Double.NaN;
+        this.endY = Double.NaN;
+    }
+
+
+    public Association() {
+
     }
 
     // Getters and Setters
