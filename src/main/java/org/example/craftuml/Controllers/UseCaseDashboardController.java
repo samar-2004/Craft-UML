@@ -31,6 +31,7 @@ import org.example.craftuml.Business.ActorManager;
 import org.example.craftuml.Business.AssociationManager;
 import org.example.craftuml.Business.UseCaseManager;
 import org.example.craftuml.Business.UseCaseRelationManager;
+import org.example.craftuml.models.Section;
 import org.example.craftuml.models.UseCaseDiagrams.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -59,6 +60,9 @@ public class UseCaseDashboardController {
     @FXML
     private ListView<String> modelInfoList;
 
+
+    private ObservableList<String> modelNames = FXCollections.observableArrayList();
+    private ObservableList<Object> modelObjects = FXCollections.observableArrayList();
     private UseCaseDiagram activeDiagram;
     private Actor activeActor;
     private UseCase activeUseCase;
@@ -89,10 +93,124 @@ public class UseCaseDashboardController {
 
     private Actor draggingActor = null; // Declare this at the class level
     private UseCase draggingUseCase = null;
+
     @FXML
     public void initialize() {
         initializeResizeHandlers();
+
+        modelInfoList.setCellFactory(listView -> new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+
+                setStyle("");
+
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    int index = getIndex();
+                    if (index >= 0 && index < modelObjects.size()) {
+                        Object modelItem = modelObjects.get(index);
+
+                        if (modelItem instanceof Section) {
+                            setText(item);
+                            setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-background-color: #f0f0f0;");
+                        } else {
+                            setText(item);
+
+                            // Individual item styles
+                            if (modelItem instanceof Actor) {
+                                setStyle("-fx-font-weight: bold; -fx-background-color: #ffe6e6;");
+                            } else if (modelItem instanceof UseCase) {
+                                setStyle("-fx-font-weight: bold; -fx-background-color: #e6ffe6;");
+                            } else if (modelItem instanceof Association) {
+                                setStyle("-fx-font-style: italic ;  -fx-background-color: #f5f5dc;");
+                            } else if (modelItem instanceof UseCaseToUseCaseRelation) {
+                                setStyle("-fx-font-style: italic ; -fx-background-color: #d9e6ff;");
+                            }
+                        }
+                    } else {
+                        setText(null);
+                        setGraphic(null);
+                    }
+                }
+            }
+        });
+        updateListView();
     }
+
+    private void updateListView() {
+        modelNames.clear();
+        modelObjects.clear();
+
+
+        // Create sections for each type of item
+        List<Section> sections = new ArrayList<>();
+
+        // ACTORS section
+        if (!actors.isEmpty()) {
+            List<Object> actorItems = new ArrayList<>(actors);
+            sections.add(new Section("ACTORS", actorItems));
+        }
+
+        // USE CASES section
+        if (!useCases.isEmpty()) {
+            List<Object> useCaseItems = new ArrayList<>(useCases);
+            sections.add(new Section("USE CASES", useCaseItems));
+        }
+
+        // RELATIONSHIPS section
+        List<Object> relationshipItems = new ArrayList<>();
+        relationshipItems.addAll(associations);
+        relationshipItems.addAll(includeRelations);
+        relationshipItems.addAll(extendRelations);
+        if (!relationshipItems.isEmpty()) {
+            sections.add(new Section("RELATIONSHIPS", relationshipItems));
+        }
+
+        // Add sections to modelObjects and modelNames
+        String SPACE = " "; // Add padding between sections
+        boolean firstSection = true;
+
+        for (Section section : sections) {
+            if (!firstSection) {
+                modelNames.add(SPACE);
+                modelObjects.add(null);
+            }
+            firstSection = false;
+
+            // Add section title
+            modelNames.add(section.getTitle());
+            modelObjects.add(section);
+
+            // Add items within the section
+            for (Object item : section.getItems()) {
+                if (item instanceof Actor) {
+                    modelNames.add(((Actor) item).getName());
+                } else if (item instanceof UseCase) {
+                    modelNames.add(((UseCase) item).getName());
+                } else if (item instanceof Association) {
+                    modelNames.add(item.toString()); // Use the Association's `toString()` implementation
+                } else if (item instanceof UseCaseToUseCaseRelation) {
+                    UseCaseToUseCaseRelation relation = (UseCaseToUseCaseRelation) item;
+                    String relationText = relation.getUseCase1().getName() +
+                            " <<" + relation.getRelationType() + ">> " +
+                            relation.getUseCase2().getName();
+                    modelNames.add(relationText);
+                } else {
+                    modelNames.add("Unknown");
+                }
+                modelObjects.add(item);
+            }
+        }
+
+        modelInfoList.setItems(FXCollections.observableList(modelNames));
+
+        isSaveable = false;
+    }
+
+
 
     private void initializeResizeHandlers() {
         drawingCanvas.setOnMouseMoved(event -> handleMouseMove(event));
@@ -356,6 +474,7 @@ public class UseCaseDashboardController {
         {
             useCaseRelationDAO.drawUseCaseRelation(extend.getUseCase1(),extend.getUseCase2(),extend.getRelationType(),drawingCanvas.getGraphicsContext2D());
         }
+        updateListView();
         isSaveable = false;
 
     }
@@ -379,31 +498,6 @@ public class UseCaseDashboardController {
         gc.fillText(diagram.getName(), textX, textY);
     }
 
-    private void showContextMenu(MouseEvent event, String diagramType) {
-        ContextMenu contextMenu = new ContextMenu();
-        MenuItem editItem = new MenuItem("Edit");
-        editItem.setOnAction(e -> {
-            if ("usecase".equals(diagramType)) {
-                if (activeUseCase != null) {
-                    // Add code for editing the UseCase
-                }
-            }
-        });
-
-        MenuItem deleteItem = new MenuItem("Delete");
-        deleteItem.setOnAction(e -> {
-            if ("usecase".equals(diagramType)) {
-                if (activeUseCase != null) {
-                    // Delete the UseCase from the diagram using the UseCase object
-                    activeDiagram.removeUseCase(activeUseCase);
-                    redrawCanvas();
-                }
-            }
-        });
-
-        contextMenu.getItems().addAll(editItem, deleteItem);
-        contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
-    }
 
     @FXML
     private void handleAddActor() {
@@ -441,9 +535,6 @@ public class UseCaseDashboardController {
                 actorDAO.addActor(actorName);
 
                 redrawCanvas();
-
-//                enableNameEdit();
-//                enableDragging();
                 enableInteractivity();
             }
         });
@@ -499,9 +590,8 @@ public class UseCaseDashboardController {
 
                 // Redraw canvas and enable features
                 redrawCanvas();
-//                enableNameEdit();
-//                enableDragging();
                 enableInteractivity();
+
             } catch (IllegalArgumentException e) {
                 showErrorMessage(e.getMessage());
             }
@@ -583,6 +673,7 @@ public class UseCaseDashboardController {
                 closeContextMenu(); // Right-click for context menu
                 handleRightClick(event);
             } else { // Left-click or drag action
+                closeContextMenu();
                 handleMousePress(event);
             }
         });
@@ -778,11 +869,16 @@ public class UseCaseDashboardController {
         selectionStage.setTitle("Select Actor and Use Case");
         selectionStage.setResizable(false);
 
-        ComboBox<Actor> actorComboBox = new ComboBox<>();
-        ComboBox<UseCase> useCaseComboBox = new ComboBox<>();
+        ComboBox<String> actorComboBox = new ComboBox<>();
+        ComboBox<String> useCaseComboBox = new ComboBox<>();
 
-        actorComboBox.setItems(FXCollections.observableArrayList(actors));
-        useCaseComboBox.setItems(FXCollections.observableArrayList(useCases));
+
+
+        // Populate combo boxes with names
+        actorComboBox.setItems(FXCollections.observableArrayList(
+                actors.stream().map(Actor::getName).toList()));
+        useCaseComboBox.setItems(FXCollections.observableArrayList(
+                useCases.stream().map(UseCase::getName).toList()));
 
         actorComboBox.setPromptText("Select Actor");
         useCaseComboBox.setPromptText("Select Use Case");
@@ -794,15 +890,30 @@ public class UseCaseDashboardController {
         useCaseComboBox.setOnAction(event -> checkSelection(actorComboBox, useCaseComboBox, confirmButton));
 
         confirmButton.setOnAction(event -> {
-            Actor selectedActor = actorComboBox.getValue();
-            UseCase selectedUseCase = useCaseComboBox.getValue();
-            if (selectedActor != null && selectedUseCase != null) {
-                if (associationDAO.createAssociation(selectedUseCase, selectedActor, associations)) {
-                    associationDAO.drawAssociationLine(selectedActor, selectedUseCase, drawingCanvas);
+            String selectedActorName = actorComboBox.getValue();
+            String selectedUseCaseName = useCaseComboBox.getValue();
+            if (selectedActorName != null && selectedUseCaseName != null) {
+                Actor selectedActor = actors.stream()
+                        .filter(actor -> actor.getName().equals(selectedActorName))
+                        .findFirst()
+                        .orElse(null);
+
+                UseCase selectedUseCase = useCases.stream()
+                        .filter(useCase -> useCase.getName().equals(selectedUseCaseName))
+                        .findFirst()
+                        .orElse(null);
+
+                if (selectedActor != null && selectedUseCase != null) {
+                    if (associationDAO.createAssociation(selectedUseCase, selectedActor, associations)) {
+                        associationDAO.drawAssociationLine(selectedActor, selectedUseCase, drawingCanvas);
+                        redrawCanvas();
+                    } else {
+                        showAlert("Association Exists", "This actor is already associated with the selected use case.");
+                    }
+                    selectionStage.close();
                 } else {
-                    showAlert("Association Exists", "This actor is already associated with the selected use case.");
+                    showAlert("Error", "Could not find selected actor or use case.");
                 }
-                selectionStage.close();
             } else {
                 showAlert("Error", "Please select both an actor and a use case.");
             }
@@ -828,9 +939,11 @@ public class UseCaseDashboardController {
         selectionStage.show();
     }
 
-    private void checkSelection(ComboBox<Actor> actorComboBox, ComboBox<UseCase> useCaseComboBox, Button confirmButton) {
+    // Helper method to enable/disable confirm button based on selections
+    private void checkSelection(ComboBox<String> actorComboBox, ComboBox<String> useCaseComboBox, Button confirmButton) {
         confirmButton.setDisable(actorComboBox.getValue() == null || useCaseComboBox.getValue() == null);
     }
+
 
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -866,47 +979,23 @@ public class UseCaseDashboardController {
         // Create a new Stage (window)
         Stage selectionStage = new Stage();
         selectionStage.setTitle("Select Use Cases for " + relationType);
-
         selectionStage.setResizable(false);
 
         // Create ComboBoxes for selecting Use Cases
-        ComboBox<UseCase> useCaseComboBox1 = new ComboBox<>();
-        ComboBox<UseCase> useCaseComboBox2 = new ComboBox<>();
+        ComboBox<String> useCaseComboBox1 = new ComboBox<>();
+        ComboBox<String> useCaseComboBox2 = new ComboBox<>();
 
-        // Populate the ComboBoxes with observable list
-        ObservableList<UseCase> observableUseCaseList = FXCollections.observableArrayList(useCases);
-        useCaseComboBox1.setItems(observableUseCaseList);
-        useCaseComboBox2.setItems(observableUseCaseList);
-
-        // Show only UseCase name (without actor or axis)
-        useCaseComboBox1.setCellFactory(lv -> new ListCell<UseCase>() {
-            @Override
-            protected void updateItem(UseCase item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.getName()); // Only show UseCase name
-                }
-            }
-        });
-
-        useCaseComboBox2.setCellFactory(lv -> new ListCell<UseCase>() {
-            @Override
-            protected void updateItem(UseCase item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.getName()); // Only show UseCase name
-                }
-            }
-        });
+        // Populate the ComboBoxes with use case names
+        ObservableList<String> observableUseCaseNames = FXCollections.observableArrayList(
+                useCases.stream().map(UseCase::getName).toList()
+        );
+        useCaseComboBox1.setItems(observableUseCaseNames);
+        useCaseComboBox2.setItems(observableUseCaseNames);
 
         useCaseComboBox1.setPromptText("Select First Use Case");
         useCaseComboBox2.setPromptText("Select Second Use Case");
 
-        // Disable comboBox2's selected use case
+        // Disable the second ComboBox's selected use case
         useCaseComboBox1.setOnAction(event -> updateComboBoxOptions(useCaseComboBox1, useCaseComboBox2));
         useCaseComboBox2.setOnAction(event -> updateComboBoxOptions(useCaseComboBox1, useCaseComboBox2));
 
@@ -920,8 +1009,19 @@ public class UseCaseDashboardController {
 
         // Set the Confirm button action
         confirmButton.setOnAction(event -> {
-            UseCase selectedUseCase1 = useCaseComboBox1.getValue();
-            UseCase selectedUseCase2 = useCaseComboBox2.getValue();
+            String selectedUseCaseName1 = useCaseComboBox1.getValue();
+            String selectedUseCaseName2 = useCaseComboBox2.getValue();
+
+            // Map the selected names back to UseCase objects
+            UseCase selectedUseCase1 = useCases.stream()
+                    .filter(useCase -> useCase.getName().equals(selectedUseCaseName1))
+                    .findFirst()
+                    .orElse(null);
+
+            UseCase selectedUseCase2 = useCases.stream()
+                    .filter(useCase -> useCase.getName().equals(selectedUseCaseName2))
+                    .findFirst()
+                    .orElse(null);
 
             // Ensure both values are selected
             if (selectedUseCase1 != null && selectedUseCase2 != null) {
@@ -952,15 +1052,25 @@ public class UseCaseDashboardController {
         selectionStage.show();
     }
 
-    private void checkUseCaseSelection(ComboBox<UseCase> comboBox1, ComboBox<UseCase> comboBox2, Button confirmButton, String relationType) {
-        UseCase useCase1 = comboBox1.getValue();
-        UseCase useCase2 = comboBox2.getValue();
+    private void checkUseCaseSelection(ComboBox<String> comboBox1, ComboBox<String> comboBox2, Button confirmButton, String relationType) {
+        String useCaseName1 = comboBox1.getValue();
+        String useCaseName2 = comboBox2.getValue();
 
-        if (useCase1 != null && useCase2 != null) {
-            if (useCase1.equals(useCase2)) {
+        if (useCaseName1 != null && useCaseName2 != null) {
+            if (useCaseName1.equals(useCaseName2)) {
                 showAlert("Error", "A use case cannot have a relation with itself.");
                 confirmButton.setDisable(true);
             } else {
+                UseCase useCase1 = useCases.stream()
+                        .filter(uc -> uc.getName().equals(useCaseName1))
+                        .findFirst()
+                        .orElse(null);
+
+                UseCase useCase2 = useCases.stream()
+                        .filter(uc -> uc.getName().equals(useCaseName2))
+                        .findFirst()
+                        .orElse(null);
+
                 if (relationType.equals("include")) {
                     if (useCaseRelationDAO.hasExtendRelation(useCase1, useCase2)) {
                         showAlert("Error", "An <<extend>> relation already exists between these use cases.");
@@ -982,6 +1092,7 @@ public class UseCaseDashboardController {
         }
     }
 
+
     private void createUseCaseRelation(UseCase useCase1, UseCase useCase2, String relationType) {
         boolean success = useCaseRelationDAO.createRelation(useCase1, useCase2, relationType);
 
@@ -997,16 +1108,26 @@ public class UseCaseDashboardController {
         }
     }
 
-    private void updateComboBoxOptions(ComboBox<UseCase> useCaseComboBox1, ComboBox<UseCase> useCaseComboBox2) {
-        UseCase selectedUseCase1 = useCaseComboBox1.getValue();
-        UseCase selectedUseCase2 = useCaseComboBox2.getValue();
+    private void updateComboBoxOptions(ComboBox<String> useCaseComboBox1, ComboBox<String> useCaseComboBox2) {
+        String selectedUseCase1 = useCaseComboBox1.getValue();
+        String selectedUseCase2 = useCaseComboBox2.getValue();
 
-        ObservableList<UseCase> options = FXCollections.observableArrayList(useCases);
-        options.remove(selectedUseCase1);
-        options.remove(selectedUseCase2);
+        // Create a new list of options excluding the selected items
+        ObservableList<String> options = FXCollections.observableArrayList(
+                useCases.stream().map(UseCase::getName).toList()
+        );
 
+        if (selectedUseCase1 != null) {
+            options.remove(selectedUseCase1);
+        }
+        if (selectedUseCase2 != null) {
+            options.remove(selectedUseCase2);
+        }
+
+        // Update the second ComboBox with the filtered options
         useCaseComboBox2.setItems(options);
     }
+
 
     // New project creation logic (Placeholder method)
     public void handleNewProject() {
