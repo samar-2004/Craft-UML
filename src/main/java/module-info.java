@@ -26,5 +26,4 @@ module org.example.craftuml {
     opens org.example.craftuml.Service to javafx.fxml;
     exports org.example.craftuml.UI;
     opens org.example.craftuml.UI to javafx.fxml;
-    requires org.mockito;
 }

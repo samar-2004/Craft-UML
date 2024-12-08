@@ -6,10 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UseCase implements DiagramComponent {
+    public static final double DEFAULT_WIDTH = 100;
+    public static final double DEFAULT_HEIGHT = 50 ;
     private String name; // Name of the use case
     private double x;
-    private double width = 100; // Default width
-    private double height = 50; // Default height
+    private double width = DEFAULT_WIDTH; // Default width
+    private double height = DEFAULT_HEIGHT; // Default height
     private double dragOffsetX; // Offset during dragging
     private double dragOffsetY; // Offset during dragging
     private List<Actor> associatedActors = new ArrayList<>();  // List to store associated actors
