@@ -6,12 +6,12 @@ import org.example.craftuml.models.UseCaseDiagrams.Actor;
 
 import java.util.List;
 
-public class ActorService {
+public class ActorManager {
 
     private List<Actor> actors;
 
     // Constructor to initialize the actors list
-    public ActorService(List<Actor> actors) {
+    public ActorManager(List<Actor> actors) {
         this.actors = actors;
     }
 

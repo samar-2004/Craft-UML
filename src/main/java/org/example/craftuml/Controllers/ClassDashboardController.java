@@ -1,11 +1,9 @@
-package org.example.craftuml.Service;
+package org.example.craftuml.Controllers;
 
-import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 
 import javafx.geometry.BoundingBox;
@@ -49,7 +47,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class ClassDashboardController {
@@ -2657,7 +2654,6 @@ public class ClassDashboardController {
     @FXML
     private void handleExportDiagram() {
         try {
-            // Step 1: Calculate the bounding box based on the coordinates of the class diagrams
             Bounds drawnBounds = calculateDiagramBounds();
             if (drawnBounds == null) {
                 showError("Export Failed", "No diagrams are drawn on the canvas.");
@@ -2715,10 +2711,6 @@ public class ClassDashboardController {
         return (lastIndex == -1) ? "" : fileName.substring(lastIndex + 1).toLowerCase();
     }
 
-    /**
-     * Calculate the bounding box of all class diagrams based on their coordinates.
-     * @return Bounds of the area covering all class diagrams, or null if no diagrams are present.
-     */
     private Bounds calculateDiagramBounds() {
         if (classDiagrams.isEmpty() && interfaceDiagrams.isEmpty()) return null;
 
@@ -2755,8 +2747,6 @@ public class ClassDashboardController {
 
         return new BoundingBox(minX, minY, maxX - minX, maxY - minY);
     }
-
-
 
 
     @FXML

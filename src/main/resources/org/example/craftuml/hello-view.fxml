@@ -6,7 +6,7 @@
 
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
-<StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.craftuml.Service.HelloController">
+<StackPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.craftuml.Controllers.HelloController">
 
     <ImageView fx:id="logoImage" fitHeight="400" fitWidth="400" StackPane.alignment="TOP_CENTER">
         <StackPane.margin>

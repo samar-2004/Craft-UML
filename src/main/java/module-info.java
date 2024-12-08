@@ -22,8 +22,8 @@ module org.example.craftuml {
 
     opens org.example.craftuml to javafx.fxml;
     exports org.example.craftuml;
-    exports org.example.craftuml.Service;
-    opens org.example.craftuml.Service to javafx.fxml;
+    exports org.example.craftuml.Controllers;
+    opens org.example.craftuml.Controllers to javafx.fxml;
     exports org.example.craftuml.UI;
     opens org.example.craftuml.UI to javafx.fxml;
 }

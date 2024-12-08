@@ -10,11 +10,11 @@ import org.example.craftuml.models.UseCaseDiagrams.UseCase;
 
 import java.util.List;
 
-public class AssociationService {
+public class AssociationManager {
     private List<UseCase> useCases;
     private List<Actor> actors;
 
-    public AssociationService(List<UseCase> useCases, List<Actor> actors) {
+    public AssociationManager(List<UseCase> useCases, List<Actor> actors) {
         this.useCases = useCases;
         this.actors = actors;
     }

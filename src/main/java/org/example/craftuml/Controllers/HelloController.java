@@ -1,4 +1,4 @@
-package org.example.craftuml.Service;
+package org.example.craftuml.Controllers;
 
 import javafx.animation.FadeTransition;
 import javafx.fxml.FXML;

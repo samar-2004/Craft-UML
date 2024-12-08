@@ -10,12 +10,12 @@ import org.example.craftuml.models.UseCaseDiagrams.UseCaseDiagram;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UseCaseService {
+public class UseCaseManager {
 
     private List<UseCase> useCases = new ArrayList<>();
 
     // Constructor to initialize the actors list
-    public UseCaseService(List<UseCase> useCases) {
+    public UseCaseManager(List<UseCase> useCases) {
         this.useCases = useCases;
     }
 

@@ -5,7 +5,7 @@
 
 <?import java.net.URL?>
 <VBox alignment="CENTER" spacing="30" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="org.example.craftuml.Service.ChooseDiagramController" styleClass="vbox">
+      fx:controller="org.example.craftuml.Controllers.ChooseDiagramController" styleClass="vbox">
 <stylesheets>
     <URL value="@chooseDiagram.css"/>
 </stylesheets>

@@ -1,4 +1,4 @@
-package org.example.craftuml.Service;
+package org.example.craftuml.Controllers;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -6,8 +6,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.stage.Stage;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 
 // Assuming you have these lists defined in your controller
 
