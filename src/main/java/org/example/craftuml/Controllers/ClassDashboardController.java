@@ -48,41 +48,143 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
+/**
+ * Controller for managing the class dashboard in the application.
+ * This class is responsible for handling user interactions related to
+ * class diagrams, including generating code, exporting diagrams, and
+ * providing functionality for various UI elements (e.g., buttons, menus).
+ * It manages the actions that can be performed on class diagrams, such as
+ * adding, removing, and updating class attributes and methods.
+ * The class also handles the export and save functionality for the class
+ * diagrams in various formats (e.g., text, image).
+ *
+ * <p>This class is typically linked to a UI framework like JavaFX, and is
+ * responsible for responding to user input and performing corresponding
+ * actions within the application, such as showing alerts, generating code,
+ * or saving diagrams.</p>
+ */
 public class ClassDashboardController {
+    /**
+     * The canvas used to draw the class diagram.
+     * It is defined as an FXML element, allowing it to be accessed and manipulated in the controller.
+     */
     @FXML
     private Canvas drawingCanvas;
+    /**
+     * The scroll pane that allows users to scroll through the class diagram when it exceeds the visible area.
+     * It is defined as an FXML element.
+     */
     @FXML
     private ScrollPane scrollPane;
 
+    /**
+     * The list view displaying information about the class model.
+     * The list is populated with model information, such as class names and other relevant data.
+     */
     @FXML
     private ListView<String> modelInfoList = new ListView<>();
+
+    /**
+     * An observable list holding names of models to be displayed in the `modelInfoList`.
+     */
     private ObservableList<String> modelNames = FXCollections.observableArrayList();
+
+    /**
+     * An observable list that holds the model objects to be displayed and interacted with in the diagram.
+     */
     private ObservableList<Object> modelObjects = FXCollections.observableArrayList();
 
+    /**
+     * The active class diagram being edited or displayed.
+     */
     private ClassDiagram classDiagram, activeDiagram;
+
+    /**
+     * The active interface diagram being edited or displayed.
+     */
     private InterfaceData interfaceDiagram, activeInterface;
+
+    /**
+     * The active relationship being managed within the diagram.
+     */
     private Relationship activeRelationship;
+    /**
+     * Flag indicating whether the source class diagram is being dragged.
+     */
     private boolean isDraggingSource = false;
+
+    /**
+     * Flag indicating whether the target class diagram is being dragged.
+     */
     private boolean isDraggingTarget = false;
+
+    /**
+     * Flag indicating whether the current diagram can be saved.
+     */
     private boolean isSaveable = false;
 
+    /**
+     * A list of obstacles (rectangles) used for collision detection or boundaries in the diagram.
+     */
     private List<Rectangle> obstacles = new ArrayList<>();
 
+    /**
+     * A list of interface diagrams that are part of the current diagram.
+     */
     private List<InterfaceData> interfaceDiagrams = new ArrayList<>();
 
-
+    /**
+     * A list of class diagrams that are part of the current diagram.
+     */
     private List<ClassDiagram> classDiagrams = new ArrayList<>();
+
+    /**
+     * The starting X-coordinate of a drag action.
+     */
     private double dragStartX = 0;
+
+    /**
+     * The starting Y-coordinate of a drag action.
+     */
     private double dragStartY = 0;
 
+
+    /**
+     * A list of relationship objects representing associations in the diagram.
+     */
     private List<Relationship> associations = new ArrayList<>();
+
+    /**
+     * A list of relationship objects representing compositions in the diagram.
+     */
     private List<Relationship> compositions = new ArrayList<>();
+
+    /**
+     * A list of relationship objects representing aggregations in the diagram.
+     */
     private List<Relationship> aggregations = new ArrayList<>();
+
+    /**
+     * A list of relationship objects representing realizations in the diagram.
+     */
     private List<Relationship> realizations = new ArrayList<>();
+
+    /**
+     * A list of relationship objects representing generalizations in the diagram.
+     */
     private List<Relationship> generalizations = new ArrayList<>();
+    /**
+     * The context menu used for interacting with the diagram objects (e.g., classes, relationships).
+     */
     private ContextMenu contextMenu;
 
+
+    /**
+     * The `initialize()` method is responsible for setting up the initial state and actions for the class diagram dashboard.
+     * It prepares the canvas for interaction, sets up the model info list to display various diagram elements,
+     * and adds listeners to handle updates to class diagrams, interface diagrams, and relationships.
+     * The method also organizes the list of model items into sections for better categorization.
+     */
 
     @FXML
     public void initialize() {
@@ -144,10 +246,22 @@ public class ClassDashboardController {
         addRelationshipListeners(generalizations);
      }
 
+    /**
+     * Adds listeners to the relation name properties of each relationship in the given list.
+     * This ensures that any changes to the name of a relationship trigger a refresh of the list view.
+     *
+     * @param relationships the list of relationships to add listeners to
+     */
     private void addRelationshipListeners(List<Relationship> relationships) {
         relationships.forEach(relationship ->
                 relationship.relationNameProperty().addListener((obs, oldName, newName) -> updateListView()));
     }
+
+    /**
+     * Updates the model info list view by categorizing diagram items into sections.
+     * It organizes class diagrams, interface diagrams, and relationships into separate sections and
+     * refreshes the list view with the latest data.
+     */
     private void updateListView() {
         modelNames.clear();
         modelObjects.clear();
@@ -208,7 +322,12 @@ public class ClassDashboardController {
 
     }
 
-
+    /**
+     * Redraws the entire canvas by clearing it and then re-rendering all class diagrams,
+     * interface diagrams, and relationships.
+     * This method iterates over all the stored diagrams and relationships and invokes
+     * their respective drawing methods to update the canvas display.
+     */
     public void redrawCanvas() {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, drawingCanvas.getWidth(), drawingCanvas.getHeight());
@@ -239,6 +358,13 @@ public class ClassDashboardController {
         updateListView();
         isSaveable = false;
     }
+
+    /**
+     * Handles the creation and addition of a new class diagram to the drawing canvas.
+     * The method displays a dialog for creating the new class diagram, calculates its
+     * position on the canvas, and adds it to the list of class diagrams. It also updates
+     * the list view and renders the diagram on the canvas.
+     */
     @FXML
     private void handleClassDiagram() {
         classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas,classDiagrams);
@@ -256,6 +382,13 @@ public class ClassDashboardController {
         createClassDiagram(classDiagram);
     }
 
+    /**
+     * Adds a given class diagram as an obstacle to the drawing area.
+     * This method calculates the dimensions of the class diagram and adds
+     * a rectangle representing the obstacle to the list of obstacles.
+     *
+     * @param classDiagram the class diagram to be added as an obstacle
+     */
     public void addClassDiagramAsObstacle(ClassDiagram classDiagram) {
         double x = classDiagram.getX();
         double y = classDiagram.getY();
@@ -264,7 +397,14 @@ public class ClassDashboardController {
         obstacles.add(new Rectangle(x, y, width, height));
     }
 
-
+    /**
+     * Creates and renders a class diagram on the drawing canvas.
+     * This method calculates the dimensions of the class diagram based on the number of attributes and methods,
+     * then draws the diagram (with name, attributes, and methods) on the canvas.
+     * It also handles the diagram's bounding box and context menu for interactions.
+     *
+     * @param classDiagram the class diagram to be drawn
+     */
     public void createClassDiagram(ClassDiagram classDiagram) {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
 
@@ -379,6 +519,14 @@ public class ClassDashboardController {
         contextMenu.getItems().addAll(editItem, deleteItem);
     }
 
+    /**
+     * Deletes a class diagram from the list of class diagrams and all related relationships.
+     * A confirmation alert is shown before the deletion. Relationships involving the class diagram
+     * are removed from the associations, compositions, aggregations, realizations, and generalizations lists.
+     * After deletion, the canvas is redrawn, and the ListView is updated accordingly.
+     *
+     * @param classDiagram The class diagram to be deleted.
+     */
     private void deleteClassDiagram(ClassDiagram classDiagram) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Delete Confirmation");
@@ -422,6 +570,13 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Updates the ListView to remove the given class diagram and all related relationships.
+     * The method iterates through all the model objects and filters out the ones related to the class diagram
+     * to be deleted. Then, it updates the ListView to reflect the changes.
+     *
+     * @param classDiagram The class diagram to be removed from the ListView.
+     */
     private void deleteClassDiagramFromListView(ClassDiagram classDiagram) {
         List<String> updatedModelNames = new ArrayList<>();
         List<Object> updatedModelObjects = new ArrayList<>();
@@ -462,7 +617,13 @@ public class ClassDashboardController {
         updateListView();  // This ensures the ListView is re-rendered with the correct data
     }
 
-
+    /**
+     * Edits the given class diagram by opening a dialog for updating its name, attributes, and methods.
+     * If the user confirms the changes, the diagram is updated with the new values.
+     * The canvas is redrawn after the update.
+     *
+     * @param classDiagram The class diagram to be edited.
+     */
     private void editClassDiagram(ClassDiagram classDiagram) {
         classDiagramUI classDiagramUI = new classDiagramUI(drawingCanvas, classDiagram,classDiagrams);
         ClassDiagram updatedDiagram = classDiagramUI.showClassDiagramDialog();
@@ -476,6 +637,16 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Checks if a given point (mouseX, mouseY) is within the bounds of the specified class diagram.
+     * The bounds are calculated based on the diagram's position, width, and height.
+     *
+     * @param mouseX The x-coordinate of the mouse pointer.
+     * @param mouseY The y-coordinate of the mouse pointer.
+     * @param diagram The class diagram to check against.
+     * @param gc The graphics context used to calculate diagram width and height.
+     * @return true if the point is within the bounds of the diagram, false otherwise.
+     */
     private boolean isWithinBounds(double mouseX, double mouseY, ClassDiagram diagram, GraphicsContext gc) {
         double x = diagram.getX();
         double y = diagram.getY();
@@ -486,6 +657,15 @@ public class ClassDashboardController {
         return isWithin;
     }
 
+
+    /**
+     * Calculates the width of a given class diagram based on its name, attributes, and methods.
+     * The width is determined by the longest text element in the diagram, with padding added.
+     *
+     * @param diagram The class diagram whose width is to be calculated.
+     * @param gc The graphics context used to measure text width.
+     * @return The calculated width of the diagram.
+     */
     private double calculateDiagramWidth(ClassDiagram diagram, GraphicsContext gc) {
         double maxWidth = 0;
 
@@ -514,6 +694,13 @@ public class ClassDashboardController {
         return maxWidth + 40;
     }
 
+    /**
+     * Calculates the height of a given class diagram based on its attributes and methods.
+     * The height includes space for the class name, attributes, methods, and some padding.
+     *
+     * @param diagram The class diagram whose height is to be calculated.
+     * @return The calculated height of the diagram.
+     */
     private double calculateDiagramHeight(ClassDiagram diagram) {
         double classNameHeight = 30;
         double attributeHeight = 0;
@@ -534,6 +721,11 @@ public class ClassDashboardController {
         return classNameHeight + attributeHeight + methodHeight + 10; // Adding padding
     }
 
+    /**
+     * Initializes the event handlers for interactions on the drawing canvas.
+     * Handles mouse presses, drags, releases, moves, and clicks for class diagrams, interfaces, and relationships.
+     * Sets up context menus, dragging functionalities, and resizing behaviors.
+     */
     private void initializeCanvasHandlers() {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
 
@@ -769,6 +961,14 @@ public class ClassDashboardController {
         });
 
     }
+
+    /**
+     * Resizes the canvas if the coordinates (x, y) exceed the current canvas size.
+     * The method ensures that the canvas is enlarged by a padding amount to accommodate new points.
+     *
+     * @param x The x-coordinate to check against the canvas width.
+     * @param y The y-coordinate to check against the canvas height.
+     */
     private void resizeCanvasIfNeeded(double x, double y) {
         double currentWidth = drawingCanvas.getWidth();
         double currentHeight = drawingCanvas.getHeight();
@@ -781,12 +981,24 @@ public class ClassDashboardController {
             drawingCanvas.setHeight(y + padding);
         }
     }
+
+    /**
+     * Closes the context menu if it is currently displayed.
+     * This method checks if the context menu is visible and hides it.
+     */
     private void closeContextMenu() {
         if (contextMenu != null && contextMenu.isShowing()) {
             contextMenu.hide();
         }
     }
 
+    /**
+     * Edits an existing relationship in the diagram by updating the source, target, and other relationship properties.
+     * Depending on the type of relationship (association, aggregation, composition, realization, or generalization),
+     * the method prompts the user to provide new values and updates the relationship accordingly.
+     *
+     * @param activeRelationship The active relationship object to be edited.
+     */
     private void editRelationship(Relationship activeRelationship) {
         if (activeRelationship != null) {
             String sourceName = activeRelationship.getSourceClass().getName();
@@ -903,7 +1115,13 @@ public class ClassDashboardController {
         }
     }
 
-    // Helper method to find an existing relationship
+    /**
+     * Finds and returns an existing relationship in the diagram if one exists.
+     * The method checks through various types of relationships (realization, association, aggregation, composition, generalization) to find a match.
+     *
+     * @param activeRelationship The relationship to search for.
+     * @return The found relationship, or null if no match is found.
+     */
     private Relationship findExistingRelationship(Relationship activeRelationship) {
         for (Relationship relationship : realizations) {
             if (relationship.equals(activeRelationship)) {
@@ -934,7 +1152,12 @@ public class ClassDashboardController {
         return null;
     }
 
-    // Helper method to handle additional relationship types (association, aggregation, etc.)
+    /**
+     * Handles additional types of relationships (association, aggregation, composition, and generalization).
+     * Based on the type of relationship, the corresponding method is called to add or edit the relationship.
+     *
+     * @param activeRelationship The relationship to handle, based on its type.
+     */
     private void handleAdditionalRelationships(Relationship activeRelationship) {
         switch (activeRelationship.getType()) {
             case "association":
@@ -954,6 +1177,14 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Prompts the user to select source and target class diagrams for a generalization relationship.
+     * This method opens a dialog to let the user pick source and target classes and returns the selected values.
+     *
+     * @param defaultSource The default source class diagram name.
+     * @param defaultTarget The default target class diagram name.
+     * @return An array of strings containing the source and target class names, multiplicities, and relationship name.
+     */
     private String[] promptForGeneralization(String defaultSource, String defaultTarget) {
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Add/Edit Generalization Relationship");
@@ -1025,6 +1256,14 @@ public class ClassDashboardController {
         return result.orElse(null); // Return null if no result is found
     }
 
+    /**
+     * Prompts the user to select source and target class diagrams, as well as entering a relationship name.
+     * This method is used specifically for relationships between a class and an interface.
+     *
+     * @param sourceName The default source class diagram name.
+     * @param targetName The default target interface diagram name.
+     * @return An array containing the selected source and target names.
+     */
     private String[] promptForSourceAndTargetClassesWithDefaults2(String sourceName, String targetName) {
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Add/Edit Relationship");
@@ -1073,7 +1312,16 @@ public class ClassDashboardController {
         return result.orElse(null);
     }
 
-
+    /**
+     * Checks if the mouse coordinates are within a specified tolerance of the relationship line.
+     * The method calculates the distance between the mouse position and the line and returns true if it's within the tolerance.
+     *
+     * @param mouseX The x-coordinate of the mouse.
+     * @param mouseY The y-coordinate of the mouse.
+     * @param relationship The relationship to check.
+     * @param gc The graphics context used for drawing.
+     * @return True if the mouse is within the tolerance of the relationship line, otherwise false.
+     */
     private boolean isWithinBounds(double mouseX, double mouseY, Relationship relationship, GraphicsContext gc) {
         double startX = relationship.getStartX();
         double startY = relationship.getStartY();
@@ -1084,13 +1332,32 @@ public class ClassDashboardController {
         return isPointNearLine(mouseX, mouseY, startX, startY, endX, endY, tolerance);
     }
 
+    /**
+     * Checks if a given point is near a line segment, within a specified tolerance.
+     * The distance from the point to the line is calculated, and if it's less than the tolerance, the method returns true.
+     *
+     * @param pointX The x-coordinate of the point.
+     * @param pointY The y-coordinate of the point.
+     * @param startX The x-coordinate of the start point of the line.
+     * @param startY The y-coordinate of the start point of the line.
+     * @param endX The x-coordinate of the end point of the line.
+     * @param endY The y-coordinate of the end point of the line.
+     * @param tolerance The tolerance within which the point should be considered near the line.
+     * @return True if the point is within the tolerance of the line, otherwise false.
+     */
     private boolean isPointNearLine(double pointX, double pointY, double startX, double startY, double endX, double endY, double tolerance) {
         double lineLength = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
         double distance = Math.abs((endY - startY) * pointX - (endX - startX) * pointY + endX * startY - endY * startX) / lineLength;
         return distance <= tolerance;
     }
 
-
+    /**
+     * Displays a context menu at the location of a mouse event, offering options to edit or delete the selected diagram.
+     * The menu options vary based on the type of diagram (class, interface, or relationship).
+     *
+     * @param event The mouse event that triggered the context menu.
+     * @param diagramType The type of diagram (class, interface, or relationship) to determine the menu options.
+     */
     private void showContextMenu(MouseEvent event, String diagramType) {
         contextMenu = new ContextMenu();
         MenuItem editItem = new MenuItem("   Edit   ");
@@ -1126,6 +1393,13 @@ public class ClassDashboardController {
         contextMenu.show(drawingCanvas, event.getScreenX(), event.getScreenY());
     }
 
+    /**
+     * Deletes the specified relationship from its respective collection based on the relationship type.
+     * The relationship is removed from the appropriate list (associations, compositions, etc.),
+     * and the ListView is updated. Additionally, the canvas is redrawn after the deletion.
+     *
+     * @param activeRelationship The relationship to delete.
+     */
     private void deleteRelationship(Relationship activeRelationship) {
         System.out.println("Deleting Relationship: " + activeRelationship.getType());
 
@@ -1154,6 +1428,12 @@ public class ClassDashboardController {
         redrawCanvas();
     }
 
+    /**
+     * Removes the specified relationship from the model's list view by filtering out the relationship
+     * from the list of model objects and model names, and then updating the list view.
+     *
+     * @param activeRelationship The relationship to remove from the list view.
+     */
     private void deleteSpecificRelationshipFromListView(Relationship activeRelationship) {
         List<String> updatedModelNames = new ArrayList<>();
         List<Object> updatedModelObjects = new ArrayList<>();
@@ -1184,7 +1464,12 @@ public class ClassDashboardController {
         updateListView();
     }
 
-
+    /**
+     * Handles the addition of an interface diagram. This method opens the dialog for the user to create a new interface
+     * diagram, positions it on the canvas, and updates the list of interface diagrams.
+     *
+     * @see InterfaceDiagramUI#showInterfaceDiagramDialog()
+     */
     @FXML
     private void handleAddInterface() {
         InterfaceDiagramUI interfaceDiagramUI = new InterfaceDiagramUI(drawingCanvas,interfaceDiagrams);
@@ -1203,6 +1488,13 @@ public class ClassDashboardController {
         createInterfaceDiagram(interfaceDiagram);
     }
 
+    /**
+     * Creates and draws the interface diagram on the canvas, including its name and methods.
+     * The interface diagram is drawn with a specified stereotype and method list, with the size
+     * dynamically calculated based on the content.
+     *
+     * @param interfaceDiagram The interface diagram to be drawn on the canvas.
+     */
     public void createInterfaceDiagram(InterfaceData interfaceDiagram) {
         GraphicsContext gc = drawingCanvas.getGraphicsContext2D();
 
@@ -1261,12 +1553,27 @@ public class ClassDashboardController {
 
     }
 
+    /**
+     * Calculates the width of the given text string when rendered with the specified graphics context's font.
+     * This method uses a temporary `Text` object to determine the layout bounds of the text.
+     *
+     * @param text The text whose width is to be calculated.
+     * @param gc The graphics context used to retrieve the font.
+     * @return The width of the text in pixels.
+     */
     private double calculateTextWidth(String text, GraphicsContext gc) {
         Text tempText = new Text(text);
         tempText.setFont(gc.getFont());
         return tempText.getLayoutBounds().getWidth();
     }
 
+    /**
+     * Prompts the user with a confirmation dialog to delete the given interface diagram. If confirmed,
+     * it removes the interface diagram from the list of interface diagrams, deletes any associated
+     * realization relationships, and updates the canvas.
+     *
+     * @param interfaceDiagram The interface diagram to be deleted.
+     */
     private void deleteInterfaceDiagram(InterfaceData interfaceDiagram) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Delete Confirmation");
@@ -1289,6 +1596,13 @@ public class ClassDashboardController {
             redrawCanvas();
         }
     }
+
+    /**
+     * Removes the specified interface diagram from the list view by filtering it out from the model's
+     * lists of names and objects. This ensures the ListView is updated to reflect the removal.
+     *
+     * @param interfaceDiagram The interface diagram to remove from the list view.
+     */
     private void deleteInterfaceDiagramFromListView(InterfaceData interfaceDiagram) {
         List<String> updatedModelNames = new ArrayList<>();
         List<Object> updatedModelObjects = new ArrayList<>();
@@ -1329,8 +1643,12 @@ public class ClassDashboardController {
         updateListView();  // Refresh the ListView
     }
 
-
-
+    /**
+     * Opens a dialog to edit the specified interface diagram. If the diagram is updated,
+     * the new name and methods are applied to the diagram, and the canvas is redrawn.
+     *
+     * @param interfaceDiagram The interface diagram to edit.
+     */
     private void editInterfaceDiagram(InterfaceData interfaceDiagram) {
         InterfaceDiagramUI interfaceDiagramUI = new InterfaceDiagramUI(drawingCanvas, interfaceDiagram,interfaceDiagrams);
         InterfaceData updatedDiagram = interfaceDiagramUI.showInterfaceDiagramDialog();
@@ -1342,6 +1660,15 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Checks whether the given mouse coordinates are within the bounds of the specified interface diagram on the canvas.
+     *
+     * @param mouseX The X coordinate of the mouse pointer.
+     * @param mouseY The Y coordinate of the mouse pointer.
+     * @param diagram The interface diagram to check.
+     * @param gc The graphics context used to calculate the diagram's dimensions.
+     * @return True if the mouse pointer is within the bounds of the diagram, otherwise false.
+     */
     private boolean isWithinBounds(double mouseX, double mouseY, InterfaceData diagram, GraphicsContext gc) {
         double x = diagram.getX();
         double y = diagram.getY();
@@ -1350,6 +1677,14 @@ public class ClassDashboardController {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 
+    /**
+     * Calculates the width of a diagram based on its name and methods.
+     * The width is calculated as the maximum width of the diagram name and its methods, with some padding applied.
+     *
+     * @param diagram The interface diagram whose width is to be calculated.
+     * @param gc      The graphics context to use for text measurements.
+     * @return The calculated width of the diagram.
+     */
     private double calculateDiagramWidth(InterfaceData diagram, GraphicsContext gc) {
         double maxWidth = calculateTextWidth("<<interface>>", gc);
         maxWidth = Math.max(maxWidth, calculateTextWidth(diagram.getName(), gc));
@@ -1360,13 +1695,27 @@ public class ClassDashboardController {
         return maxWidth * 1.3;
     }
 
+    /**
+     * Calculates the height of a diagram based on its name and methods.
+     * The height is determined by the height of the interface name and the methods.
+     *
+     * @param diagram The interface diagram whose height is to be calculated.
+     * @return The calculated height of the diagram.
+     */
     private double calculateDiagramHeight(InterfaceData diagram) {
         double interfaceNameHeight = 40;
         double methodHeight = Math.max(30 * diagram.getMethods().size(), 30);
         return interfaceNameHeight + methodHeight;
     }
 
-
+    /**
+     * Prompts the user to select source and target class diagrams, specify multiplicities,
+     * and optionally enter a relationship name for a given relationship type.
+     *
+     * @param relationType The type of relationship (e.g., "association").
+     * @return An array containing the source diagram name, target diagram name,
+     *         source multiplicity, target multiplicity, and the relationship name.
+     */
     private String[] promptForSourceAndTargetClasses(String relationType) {
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Add "+relationType.toUpperCase());
@@ -1512,7 +1861,20 @@ public class ClassDashboardController {
         return result.orElse(null);
     }
 
-
+    /**
+     * Displays a dialog to allow the user to select source and target class diagrams, specify multiplicities,
+     * and enter a relationship name. This method also supports default values for all fields to edit an existing
+     * relationship.
+     *
+     * @param defaultSource The default source class diagram to be pre-selected in the dialog.
+     * @param defaultTarget The default target class diagram to be pre-selected in the dialog.
+     * @param relationType The type of relationship (e.g., "association") that is being edited.
+     * @param defaultSourceMultiplicity The default multiplicity for the source class diagram (e.g., "1", "0..1").
+     * @param defaultTargetMultiplicity The default multiplicity for the target class diagram (e.g., "1", "0..*").
+     * @param defaultRelationshipName The default name of the relationship to be pre-filled in the text field.
+     * @return A string array containing the source class, target class, source multiplicity, target multiplicity,
+     *         and relationship name, or null if the user cancels the dialog or fails to fill required fields.
+     */
     private String[] promptForSourceAndTargetClassesWithDefaults(
             String defaultSource,
             String defaultTarget,
@@ -1672,7 +2034,13 @@ public class ClassDashboardController {
         return result.orElse(null); // Return null if no result is found
     }
 
-
+    /**
+     * Finds a class diagram by its name.
+     *
+     * @param name The name of the class diagram to find.
+     * @return The matching ClassDiagram object.
+     * @throws IllegalArgumentException If no class diagram with the specified name is found.
+     */
     private ClassDiagram findDiagramByName(String name) {
         for (ClassDiagram diagram : classDiagrams) {
             if (diagram.getName().equals(name)) {
@@ -1682,26 +2050,46 @@ public class ClassDashboardController {
         throw new IllegalArgumentException("No class diagram found with name: " + name);
     }
 
+    /**
+     * Handles the action of adding an association relationship between class diagrams.
+     * This is triggered when the "Add Association" button is clicked.
+     */
     @FXML
     private void handleAddAssociation() {
         addRelationship("association");
     }
 
+    /**
+     * Handles the addition of a composition relationship by calling the appropriate method.
+     */
     @FXML
     private void handleAddComposition() {
         addRelationship("composition");
     }
 
+    /**
+     * Handles the addition of an aggregation relationship by calling the appropriate method.
+     */
     @FXML
     private void handleAddAggregation() {
         addRelationship("aggregation");
     }
 
+    /**
+     * Handles the addition of a generalization relationship by prompting the user to select source and target
+     * class diagrams, then checks for existing relationships and updates or creates a new generalization
+     * relationship as needed.
+     */
     @FXML
     private void handleAddGeneralization() {
         addGeneralization();
     }
 
+    /**
+     * Prompts the user to select source and target class diagrams for a generalization relationship. If the
+     * selected relationship already exists, it will be updated. If not, a new generalization relationship
+     * will be created.
+     */
     private void addGeneralization() {
         String[] details = promptForSourceAndTargetClassesWithoutExtras();
         if (details == null) return;
@@ -1802,6 +2190,14 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Prompts the user to select source and target class diagrams for a generalization relationship, without
+     * additional options for multiplicities or relationship name. This is a simplified version of the dialog
+     * for generalizations.
+     *
+     * @return A string array containing the names of the source and target class diagrams, or null if the user
+     *         cancels the dialog or does not make valid selections.
+     */
     private String[] promptForSourceAndTargetClassesWithoutExtras() {
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Add Generalization");
@@ -1916,7 +2312,15 @@ public class ClassDashboardController {
         return result.orElse(null); // Return null if no result is found
     }
 
-
+    /**
+     * Handles the addition of a new relationship based on the given relationship type.
+     * This method prompts the user to select source and target classes, along with other relationship details
+     * such as multiplicity and name. It checks for existing relationships of all types (association, composition,
+     * aggregation, and generalization) between the selected classes and removes them if necessary, before creating
+     * and adding a new relationship of the specified type.
+     *
+     * @param relationshipType The type of the relationship (e.g., "association", "composition", "aggregation").
+     */
     private void addRelationship(String relationshipType) {
         String[] details = promptForSourceAndTargetClasses(relationshipType);
         if (details == null) return;
@@ -2020,7 +2424,12 @@ public class ClassDashboardController {
         }
     }
 
-
+    /**
+     * Adds the given relationship to the appropriate list based on its type. It also sets up a listener
+     * for any changes to the relationship's name, ensuring the list view is updated when the name changes.
+     *
+     * @param relationship The relationship to be added to the list.
+     */
     private void addRelationshipToList(Relationship relationship) {
         switch (relationship.getType().toLowerCase()) {
             case "association":
@@ -2045,7 +2454,11 @@ public class ClassDashboardController {
         updateListView();
     }
 
-
+    /**
+     * Handles the addition of a "Realization" relationship between a class and an interface. This method
+     * prompts the user to select the source class and target interface, checks for any existing realization
+     * relationship, and if none exists, creates and adds a new realization relationship to the list.
+     */
     @FXML
     public void handleAddRealization() {
         Pair<String, String> names = promptForSourceAndTargetInterface();
@@ -2082,6 +2495,13 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Finds and returns the interface diagram by its name.
+     *
+     * @param value The name of the interface diagram to search for.
+     * @return The interface diagram corresponding to the given name.
+     * @throws IllegalArgumentException If no interface diagram with the given name is found.
+     */
     private InterfaceData findInterfaceDiagramByName(String value) {
         for (InterfaceData diagram : interfaceDiagrams) {
             if (diagram.getName().equals(value)) {
@@ -2091,6 +2511,12 @@ public class ClassDashboardController {
         throw new IllegalArgumentException("No interface diagram found with name: " + value);
     }
 
+    /**
+     * Prompts the user to select the source and target diagrams for a realization relationship.
+     * This method displays a dialog with combo boxes for selecting the source class and target interface.
+     *
+     * @return A pair containing the names of the selected source class and target interface, or null if no selection is made.
+     */
     private Pair<String, String> promptForSourceAndTargetInterface() {
         Dialog<Pair<String, String>> dialog = new Dialog<>();
         dialog.setTitle("Add Realization");
@@ -2136,7 +2562,11 @@ public class ClassDashboardController {
 
     }
 
-
+    /**
+     * Displays an error alert with the given message.
+     *
+     * @param message The error message to display.
+     */
     private void showErrorAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -2145,6 +2575,11 @@ public class ClassDashboardController {
         alert.showAndWait();
     }
 
+    /**
+     * Handles the creation of a new project by checking if the current project has unsaved changes.
+     * If there are unsaved changes, the user is prompted with a confirmation dialog.
+     * If the user confirms, the workspace is cleared, otherwise the new project creation is canceled.
+     */
     @FXML
     private void handleNewProject() {
         if(isSaveable)
@@ -2166,6 +2601,12 @@ public class ClassDashboardController {
             }
         }
     }
+
+    /**
+     * Clears the workspace by resetting various properties, clearing collections, and removing any graphical
+     * representations of class and interface diagrams, relationships, and other model elements.
+     * Also resets the state of the drawing canvas.
+     */
     private void clearWorkspace() {
         activeDiagram = null;
         activeInterface = null;
@@ -2202,7 +2643,13 @@ public class ClassDashboardController {
         }
     }
 
-
+    /**
+     * Handles the process of saving the current project to an XML file. The user is prompted to select a location
+     * for saving the project. The project's diagrams, relationships, and other relevant information are written
+     * to an XML file, with proper formatting and tags.
+     *
+     * @throws IOException if there is an error during the file writing process.
+     */
     @FXML
     private void handleSaveProject()
     {
@@ -2297,6 +2744,14 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Saves a relationship to the XML file by writing its details (type, source, target, multiplicities, and coordinates).
+     *
+     * @param writer the BufferedWriter used to write to the file.
+     * @param relationship the Relationship object to be saved.
+     * @param type the type of relationship (e.g., "association", "aggregation").
+     * @throws IOException if an error occurs during the writing process.
+     */
     private void saveRelationship(BufferedWriter writer, Relationship relationship, String type) throws IOException {
         writer.write("        <Relationship>\n");
         writer.write("            <Type>" + type + "</Type>\n");
@@ -2319,6 +2774,12 @@ public class ClassDashboardController {
         writer.write("        </Relationship>\n");
     }
 
+    /**
+     * Handles the "Open Project" action. This method allows the user to select an XML file
+     * containing the project data. It then loads the class diagrams, interface diagrams, and relationships
+     * from the file, clears the existing diagrams and relationships, and redraws the canvas.
+     *
+     */
     @FXML
     private void handleOpenProject() {
         FileChooser fileChooser = new FileChooser();
@@ -2377,6 +2838,13 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Loads a class diagram from the given XML element representing a class diagram.
+     * This includes loading the class name, coordinates, attributes, and methods.
+     *
+     * @param classElement The XML element representing a class diagram.
+     * @return A ClassDiagram object populated with the data from the XML element.
+     */
     private ClassDiagram loadClassDiagram(Element classElement) {
         String className = classElement.getElementsByTagName("Name").item(0).getTextContent();
         double x = Double.parseDouble(classElement.getElementsByTagName("X").item(0).getTextContent()); // Load X coordinate
@@ -2410,6 +2878,13 @@ public class ClassDashboardController {
         return classDiagram;
     }
 
+    /**
+     * Loads an interface diagram from the given XML element representing an interface diagram.
+     * This includes loading the interface name, coordinates, and methods.
+     *
+     * @param interfaceElement The XML element representing an interface diagram.
+     * @return An InterfaceData object populated with the data from the XML element.
+     */
     private InterfaceData loadInterfaceDiagram(Element interfaceElement) {
         String interfaceName = interfaceElement.getElementsByTagName("Name").item(0).getTextContent();
         double x = Double.parseDouble(interfaceElement.getElementsByTagName("X").item(0).getTextContent());  // Load X coordinate
@@ -2434,6 +2909,14 @@ public class ClassDashboardController {
         return interfaceDiagram;
     }
 
+    /**
+     * Loads a relationship from the given XML element representing a relationship.
+     * This method extracts various relationship properties, including type, source and target,
+     * coordinates, and multiplicities, and creates a corresponding Relationship object.
+     *
+     * @param relationshipElement The XML element representing a relationship.
+     * @return A Relationship object populated with the data from the XML element.
+     */
     private Relationship loadRelationship(Element relationshipElement) {
         // Extract standard relationship fields
         String type = relationshipElement.getElementsByTagName("Type").item(0).getTextContent();
@@ -2477,6 +2960,11 @@ public class ClassDashboardController {
         return relationship;
     }
 
+    /**
+     * Adds a relationship to the appropriate list based on its type (association, aggregation, etc.).
+     *
+     * @param relationship The Relationship object to add to the list.
+     */
     private void addToRelationshipList(Relationship relationship) {
         switch (relationship.getType()) {
             case "association":
@@ -2497,7 +2985,13 @@ public class ClassDashboardController {
         }
     }
 
-
+    /**
+     * Displays an alert with the specified type, title, and message.
+     *
+     * @param alertType the type of alert (e.g., INFORMATION, ERROR)
+     * @param title the title of the alert window
+     * @param message the message to display in the alert
+     */
     private void showAlert(Alert.AlertType alertType, String title, String message) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
@@ -2505,6 +2999,13 @@ public class ClassDashboardController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
+    /**
+            * Displays an error alert with the given title and message.
+            *
+            * @param title the title of the alert window
+     * @param message the message to display in the alert
+     */
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -2512,6 +3013,10 @@ public class ClassDashboardController {
         alert.showAndWait();
     }
 
+    /**
+     * Handles the exit action of the application by showing a confirmation dialog.
+     * If confirmed, the application will close. Otherwise, the exit is canceled.
+     */
     @FXML
     private void handleExit() {
         Alert exitConfirmation = new Alert(Alert.AlertType.CONFIRMATION);
@@ -2528,6 +3033,10 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Handles the generation of code based on the class and interface diagrams.
+     * The generated code is saved to a text file selected by the user.
+     */
     @FXML
     private void handleGenerateCode()
     {
@@ -2637,6 +3146,12 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Maps an access modifier to its corresponding Java keyword.
+     *
+     * @param accessModifier the access modifier (e.g., "+", "-", "#")
+     * @return the corresponding Java access modifier keyword (e.g., "public", "private", "protected")
+     */
     private String mapAccessModifier(String accessModifier) {
         switch (accessModifier) {
             case "-":
@@ -2650,7 +3165,10 @@ public class ClassDashboardController {
         }
     }
 
-
+    /**
+     * Exports the current diagram as an image (JPG or PNG).
+     * Takes a snapshot of the drawing canvas, crops it, and saves it to a file.
+     */
     @FXML
     private void handleExportDiagram() {
         try {
@@ -2706,11 +3224,23 @@ public class ClassDashboardController {
         }
     }
 
+    /**
+     * Retrieves the file extension from a given file name.
+     *
+     * @param fileName the name of the file
+     * @return the file extension (e.g., "jpg", "png")
+     */
     private String getFileExtension(String fileName) {
         int lastIndex = fileName.lastIndexOf('.');
         return (lastIndex == -1) ? "" : fileName.substring(lastIndex + 1).toLowerCase();
     }
 
+    /**
+     * Calculates the bounds of all drawn diagrams on the canvas.
+     * If no diagrams are drawn, returns null.
+     *
+     * @return the bounds of the drawn diagrams or null if no diagrams exist
+     */
     private Bounds calculateDiagramBounds() {
         if (classDiagrams.isEmpty() && interfaceDiagrams.isEmpty()) return null;
 
@@ -2748,7 +3278,9 @@ public class ClassDashboardController {
         return new BoundingBox(minX, minY, maxX - minX, maxY - minY);
     }
 
-
+    /**
+     * Handles the "About" action by showing information about the application.
+     */
     @FXML
     private void handleAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);

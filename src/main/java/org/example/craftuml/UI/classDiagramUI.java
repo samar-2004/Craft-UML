@@ -18,13 +18,40 @@ import org.example.craftuml.models.ClassDiagrams.MethodData;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents the user interface for managing and displaying class diagrams.
+ * This class provides functionality for drawing and interacting with class diagrams
+ * within a canvas. It handles multiple class diagrams and displays error messages when necessary.
+ */
 public class classDiagramUI
 {
+    /**
+     * The current class diagram being displayed or interacted with.
+     */
     private ClassDiagram currentClassDiagram;
+
+    /**
+     * The canvas on which the class diagram is drawn.
+     */
     private Canvas drawingCanvas;
+
+    /**
+     * Label used to display error messages to the user.
+     */
     Label errorLabel = new Label();
+
+    /**
+     * A list of class diagrams that are available for selection or display.
+     */
     private List<ClassDiagram> classDiagrams;
 
+    /**
+     * Initializes a new user interface for a class diagram with the specified canvas and list of class diagrams.
+     *
+     * @param drawingCanvas The canvas on which the class diagram will be drawn.
+     * @param diagrams The list of available class diagrams.
+     * @throws IllegalArgumentException If the provided canvas is null.
+     */
     public classDiagramUI(Canvas drawingCanvas,List<ClassDiagram> diagrams) {
         if (drawingCanvas == null) {
             throw new IllegalArgumentException("Canvas cannot be null");
@@ -34,12 +61,26 @@ public class classDiagramUI
         this.classDiagrams = diagrams;
     }
 
+    /**
+     * Initializes a new user interface for a specific class diagram with the specified canvas and list of class diagrams.
+     *
+     * @param drawingCanvas The canvas on which the class diagram will be drawn.
+     * @param classDiagram The class diagram to be displayed or edited.
+     * @param diagrams The list of available class diagrams.
+     */
     public classDiagramUI(Canvas drawingCanvas, ClassDiagram classDiagram,List<ClassDiagram> diagrams) {
         this.drawingCanvas = drawingCanvas;
         this.currentClassDiagram = classDiagram;
         this.classDiagrams = diagrams;
     }
 
+    /**
+     * Displays a dialog to create or edit a class diagram. Allows the user to input the class name, attributes, and methods.
+     * The dialog provides the ability to add, remove, and edit attributes and methods, and ensures all fields are filled
+     * correctly before confirming the creation or modification.
+     *
+     * @return The created or edited ClassDiagram object.
+     */
     public ClassDiagram showClassDiagramDialog() {
         errorLabel.setVisible(false);
         Stage inputStage = new Stage();
@@ -232,6 +273,14 @@ public class classDiagramUI
         return currentClassDiagram;
     }
 
+    /**
+     * Checks if all required fields in the given VBox are filled.
+     * This method traverses the VBox and ensures that all fields related to attributes or methods are filled out,
+     * and no error labels are visible.
+     *
+     * @param vBox The VBox containing the fields to check.
+     * @return true if all fields are filled and no error labels are visible, false otherwise.
+     */
     public boolean areFieldsFilled(VBox vBox) {
         for (Node node : vBox.getChildren()) {
             if (node instanceof VBox) {
@@ -280,7 +329,14 @@ public class classDiagramUI
         return true;
     }
 
-
+    /**
+     * Adds a new attribute field to the given VBox for attributes.
+     * This method adds a set of input fields for defining an attribute, including the access modifier,
+     * attribute name, and data type. It also handles the addition of a separator between attributes.
+     *
+     * @param attributesVBox The VBox to which the new attribute field will be added.
+     * @param existingAttribute The existing attribute data to prefill the fields (can be null for new attributes).
+     */
     public void addAttributeField(VBox attributesVBox, AttributeData existingAttribute) {
         Region separator = new Region();
         separator.setStyle("-fx-background-color: #D3D3D3; -fx-min-height: 1.5px;");
@@ -318,6 +374,16 @@ public class classDiagramUI
         attributesVBox.getChildren().addAll(newAttributeVBox, separator);
     }
 
+    /**
+     * Adds a new method field to the given VBox for methods.
+     * This method adds a set of input fields for defining a method, including the access modifier,
+     * method name, and return type. It also provides validation for method name formatting
+     * (requires parentheses at the end of the name). It also handles the addition of a separator between methods.
+     *
+     * @param methodsVBox The VBox to which the new method field will be added.
+     * @param existingMethod The existing method data to prefill the fields (can be null for new methods).
+     * @param okButton The button to enable or disable based on validation of method name.
+     */
     public void addMethodField(VBox methodsVBox, MethodData existingMethod, Button okButton) {
         Region separator = new Region();
         separator.setStyle("-fx-background-color: #D3D3D3; -fx-min-height: 1.5px;");
@@ -373,6 +439,15 @@ public class classDiagramUI
         newMethodVBox.getChildren().addAll(methodLabel, fieldBox);
         methodsVBox.getChildren().addAll(newMethodVBox, separator);
     }
+
+    /**
+     * Validates the method name to ensure it follows the correct format.
+     * The method name must contain parentheses at the end and no parentheses at the beginning.
+     * For example, "methodName()" is valid, but "(methodName)" or "methodName" is invalid.
+     *
+     * @param methodName The method name to validate.
+     * @return true if the method name is valid, false otherwise.
+     */
     public boolean validateMethodName(String methodName) {
         if (methodName == null || methodName.isEmpty()) {
             return false;
@@ -384,6 +459,13 @@ public class classDiagramUI
         return closeParenIndex == methodName.length() - 1 && openParenIndex > 0 && openParenIndex < closeParenIndex;
     }
 
+    /**
+     * Gathers the attribute data from the input fields in the given VBox and returns a list of AttributeData objects.
+     * This method extracts the access modifier, name, and data type for each attribute from the input fields.
+     *
+     * @param attributesVBox The VBox containing the input fields for the attributes.
+     * @return A list of AttributeData objects representing the attributes entered by the user.
+     */
     private List<AttributeData> gatherAttributes(VBox attributesVBox) {
         List<AttributeData> attributes = new ArrayList<>();
         for (Node node : attributesVBox.getChildren()) {
@@ -423,6 +505,13 @@ public class classDiagramUI
         return attributes;
     }
 
+    /**
+     * Gathers the method data from the input fields in the given VBox and returns a list of MethodData objects.
+     * This method extracts the access modifier, name, and return type for each method from the input fields.
+     *
+     * @param methodsVBox The VBox containing the input fields for the methods.
+     * @return A list of MethodData objects representing the methods entered by the user.
+     */
     private List<MethodData> gatherMethods(VBox methodsVBox) {
         List<MethodData> methods = new ArrayList<>();
         for (Node node : methodsVBox.getChildren()) {
@@ -464,6 +553,12 @@ public class classDiagramUI
         return methods;
     }
 
+    /**
+     * Displays an error message in a popup alert.
+     * This method creates an alert with an error type and shows the provided message to the user.
+     *
+     * @param message The error message to be displayed in the alert.
+     */
     public void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
