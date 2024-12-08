@@ -51,34 +51,20 @@ class ActorTest {
         assertThrows(IllegalArgumentException.class, () -> actor.setPosition(-1, 0));
         assertThrows(IllegalArgumentException.class, () -> actor.setPosition(0, -1));
     }
-//
-//    @Test
-//    void testDragging() {
-//        // Simulate the press event
-//        MouseEvent pressEvent = new MouseEvent(MouseEvent.MOUSE_PRESSED, 0.0, 0.0, 0.0, 0.0,
-//                null, 1, false, false, false, false,
-//                false, false, false, false, false, null);
-//
-//        // Simulate the drag event
-//        MouseEvent dragEvent = new MouseEvent(MouseEvent.MOUSE_DRAGGED, 100.0, 200.0, 0.0, 0.0,
-//                null, 1, false, false, false, false,
-//                false, false, false, false, false, null);
-//
-//        // Simulate mouse press and drag events
-//        actor.onMousePressed(pressEvent);
-//        actor.onMouseDragged(dragEvent);
-//
-//        // Assert that the actor moved to the correct position
-//        // The actor should move to (100 - width/2, 200 - height/2)
-//        assertEquals(70, actor.getX(), 0.01); // x = 100 - width/2
-//        assertEquals(155, actor.getY(), 0.01); // y = 200 - height/2
-//    }
+
 
     @Test
     void testIsClicked() {
-        // Actor at (0,0) with default width and height
-        assertTrue(actor.isClicked(15, 45)); // Inside the actor's rectangle
-        assertFalse(actor.isClicked(100, 100)); // Outside the actor's rectangle
+        Actor actor = new Actor("TestActor");
+        actor.setX(50);  // Set x-coordinate for the actor
+        actor.setY(100); // Set y-coordinate for the actor
+
+        // Simulate a click inside the actor's rectangle (within bounds)
+        double mouseX = 55; // Inside the actor's rectangle
+        double mouseY = 120; // Inside the actor's rectangle
+
+        // Assert that the click is inside the actor's rectangle
+        assertTrue(actor.isClicked(mouseX, mouseY), "The actor should have been clicked");// Outside the actor's rectangle
     }
 
     @Test

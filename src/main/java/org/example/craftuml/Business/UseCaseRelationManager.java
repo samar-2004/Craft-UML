@@ -8,15 +8,43 @@ import org.example.craftuml.models.UseCaseDiagrams.UseCaseToUseCaseRelation;
 
 import java.util.List;
 
+/**
+ * Manages the relationships between `UseCase` objects, specifically "include" and "extend" relations.
+ * Provides functionality for storing and managing these relations in a use case diagram.
+ */
+
 public class UseCaseRelationManager {
+    /**
+     * A list of `UseCaseToUseCaseRelation` objects representing "include" relationships between use cases.
+     * These relationships indicate that one use case includes the behavior of another.
+     */
     private List<UseCaseToUseCaseRelation> includeRelations;
+
+    /**
+     * A list of `UseCaseToUseCaseRelation` objects representing "extend" relationships between use cases.
+     * These relationships indicate that one use case can extend the behavior of another under certain conditions.
+     */
     private List<UseCaseToUseCaseRelation> extendRelations;
 
+    /**
+     * Constructor to initialize the `UseCaseRelationManager` with specified lists of include and extend relations.
+     *
+     * @param includeRelations A list of `UseCaseToUseCaseRelation` objects representing include relations.
+     * @param extendRelations A list of `UseCaseToUseCaseRelation` objects representing extend relations.
+     */
     public UseCaseRelationManager(List<UseCaseToUseCaseRelation> includeRelations, List<UseCaseToUseCaseRelation> extendRelations) {
         this.includeRelations = includeRelations;
         this.extendRelations = extendRelations;
     }
 
+    /**
+     * Adds an "include" relation between two use cases, if it doesn't already exist.
+     * The "include" relation indicates that one use case includes the behavior of another.
+     *
+     * @param useCase1 The first use case in the relation.
+     * @param useCase2 The second use case in the relation.
+     * @return `true` if the relation was added successfully, `false` if the relation already exists.
+     */
     public boolean addIncludeRelation(UseCase useCase1, UseCase useCase2) {
         if (hasIncludeRelation(useCase1, useCase2)) {
             return false; // Relation already exists
@@ -25,6 +53,14 @@ public class UseCaseRelationManager {
         return true;
     }
 
+    /**
+     * Adds an "extend" relation between two use cases, if it doesn't already exist.
+     * The "extend" relation indicates that one use case can extend the behavior of another under certain conditions.
+     *
+     * @param useCase1 The first use case in the relation.
+     * @param useCase2 The second use case in the relation.
+     * @return `true` if the relation was added successfully, `false` if the relation already exists.
+     */
     public boolean addExtendRelation(UseCase useCase1, UseCase useCase2) {
         if (hasExtendRelation(useCase1, useCase2)) {
             return false; // Relation already exists
@@ -33,6 +69,13 @@ public class UseCaseRelationManager {
         return true;
     }
 
+    /**
+     * Checks if there is an "include" relation between the two specified use cases.
+     *
+     * @param useCase1 The first use case in the relation.
+     * @param useCase2 The second use case in the relation.
+     * @return `true` if the "include" relation exists, `false` otherwise.
+     */
     public boolean hasIncludeRelation(UseCase useCase1, UseCase useCase2) {
         for (UseCaseToUseCaseRelation relation : includeRelations) {
             if ((relation.getUseCase1().equals(useCase1) && relation.getUseCase2().equals(useCase2)) ||
@@ -43,6 +86,13 @@ public class UseCaseRelationManager {
         return false;
     }
 
+    /**
+     * Checks if there is an "extend" relation between the two specified use cases.
+     *
+     * @param useCase1 The first use case in the relation.
+     * @param useCase2 The second use case in the relation.
+     * @return `true` if the "extend" relation exists, `false` otherwise.
+     */
     public boolean hasExtendRelation(UseCase useCase1, UseCase useCase2) {
         for (UseCaseToUseCaseRelation relation : extendRelations) {
             if ((relation.getUseCase1().equals(useCase1) && relation.getUseCase2().equals(useCase2)) ||
@@ -53,6 +103,15 @@ public class UseCaseRelationManager {
         return false;
     }
 
+    /**
+     * Draws a relationship between two use cases on the provided graphics context, using a dotted line and an arrowhead.
+     * The relation type (include/extend) is displayed as a label along the line.
+     *
+     * @param useCase1 The first use case in the relationship.
+     * @param useCase2 The second use case in the relationship.
+     * @param relationType The type of relation ("include" or "extend").
+     * @param gc The graphics context used to draw the relation.
+     */
     public void drawUseCaseRelation(UseCase useCase1, UseCase useCase2, String relationType, GraphicsContext gc) {
 
         // Use case centers
@@ -96,6 +155,12 @@ public class UseCaseRelationManager {
 
     /**
      * Draws an arrowhead pointing from (x1, y1) to (x2, y2).
+     *
+     * @param gc The graphics context used to draw the arrowhead.
+     * @param x1 The x-coordinate of the start point of the arrow.
+     * @param y1 The y-coordinate of the start point of the arrow.
+     * @param x2 The x-coordinate of the end point of the arrow.
+     * @param y2 The y-coordinate of the end point of the arrow.
      */
     private void drawArrowhead(GraphicsContext gc, double x1, double y1, double x2, double y2) {
         double angle = Math.atan2(y2 - y1, x2 - x1);
@@ -113,6 +178,18 @@ public class UseCaseRelationManager {
         gc.strokeLine(x2, y2, xArrow2, yArrow2);
     }
 
+    /**
+     * Determines the nearest boundary point on a use case (either elliptical or rectangular) from a target point.
+     *
+     * @param x The x-coordinate of the top-left corner of the use case.
+     * @param y The y-coordinate of the top-left corner of the use case.
+     * @param width The width of the use case.
+     * @param height The height of the use case.
+     * @param targetX The x-coordinate of the target point.
+     * @param targetY The y-coordinate of the target point.
+     * @param isEllipse True if the use case is elliptical, false if rectangular.
+     * @return The nearest boundary point of the use case to the target point.
+     */
     private Point2D getNearestBoundaryPoint(double x, double y, double width, double height,
                                             double targetX, double targetY, boolean isEllipse) {
         if (isEllipse) {
@@ -151,6 +228,15 @@ public class UseCaseRelationManager {
         }
     }
 
+    /**
+     * Creates a relation (either "include" or "extend") between two use cases.
+     * The relation is not created if the use cases are the same (self-relation).
+     *
+     * @param useCase1 The first use case in the relation.
+     * @param useCase2 The second use case in the relation.
+     * @param relationType The type of relation ("include" or "extend").
+     * @return `true` if the relation was successfully created, `false` if not.
+     */
     public boolean createRelation(UseCase useCase1, UseCase useCase2, String relationType) {
         if (useCase1.equals(useCase2)) {
             return false; // Prevent self-relation
