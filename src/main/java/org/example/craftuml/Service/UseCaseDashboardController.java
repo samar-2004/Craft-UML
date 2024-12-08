@@ -186,6 +186,7 @@ public class UseCaseDashboardController {
                 && mouseY <= activeDiagram.getY() + activeDiagram.getHeight() + RESIZE_MARGIN;
     }
 
+
     @FXML
     public void handleAddUseCaseDiagram(ActionEvent actionEvent) {
         if (activeDiagram != null) {
