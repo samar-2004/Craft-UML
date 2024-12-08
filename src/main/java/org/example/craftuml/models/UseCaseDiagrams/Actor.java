@@ -66,12 +66,12 @@ public class Actor implements DiagramComponent {
         this.dragOffsetY = dragOffsetY;
     }
 
-    private void onMousePressed(MouseEvent event) {
+    public void onMousePressed(MouseEvent event) {
         // Logic to handle when mouse is pressed on the actor
         System.out.println("Actor clicked: " + name);
     }
 
-    private void onMouseDragged(MouseEvent event) {
+    public void onMouseDragged(MouseEvent event) {
         // Update position of actor while dragging
         setX(event.getSceneX() - width / 2); // Center actor at mouse position
         setY(event.getSceneY() - height / 2); // Center actor at mouse position

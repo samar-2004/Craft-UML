@@ -38,7 +38,7 @@ public class UseCaseToUseCaseRelation {
     }
 
     public void addRelation(Text relation){
-        relationType = String.valueOf(relation);
+        relationType = relation.getText();
     }
 }
 

@@ -66,33 +66,26 @@ public class UseCaseDiagram {
         this.x = x;
         this.y = y;
         this.actors = new ArrayList<>();
+        useCases = new ArrayList<>();
+        useCaseRelations = new ArrayList<>();
+        associations = new ArrayList<>();
     }
 
     public UseCaseDiagram() {
         useCases = new ArrayList<>();
         actors = new ArrayList<>();
+        useCaseRelations = new ArrayList<>();
+        associations = new ArrayList<>();
     }
 
-//    public void addUseCase(String useCaseName) {
-//        if (useCaseName == null || useCaseName.trim().isEmpty()) {
-//            throw new IllegalArgumentException("UseCase name cannot be null or empty");
-//        }
-//        useCases.add(new UseCase(useCaseName));
-//    }
 
     public void addUseCase(UseCase useCase) {
         useCases.add(useCase); // Assuming useCases is a list of UseCase objects
     }
 
-//    public void removeUseCase(String useCaseName) {
-//        UseCase useCase = findUseCaseByName(useCaseName);
-//        if (useCase != null) {
-//            useCases.remove(useCase);
-//        }
-//    }
 
     public void removeUseCase(UseCase useCase) {
-        useCases.remove(useCase); // Assuming useCases is a list of UseCase objects
+        useCases.remove(useCase);
     }
 
     public void addActor(String actorName) {
