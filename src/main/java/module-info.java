@@ -30,5 +30,4 @@ module org.example.craftuml {
     opens org.example.craftuml.Tests to org.junit.platform.commons;
     exports org.example.craftuml.UI;
     opens org.example.craftuml.UI to javafx.fxml;
-    requires org.mockito;
 }
