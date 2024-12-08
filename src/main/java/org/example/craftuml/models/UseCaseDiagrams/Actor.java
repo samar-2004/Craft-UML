@@ -7,6 +7,18 @@ import org.example.craftuml.models.DiagramComponent;
 
 import java.util.List;
 
+/**
+ * Represents an actor in a use case diagram.
+ * <p>
+ * An actor is a key element in a use case diagram, typically representing a user or an external system
+ * that interacts with the system being modeled. This class provides functionalities to manage an actor's
+ * properties such as name, position, and size, as well as its associations with use cases.
+ * <p>
+ * The visual representation of an actor is managed using a rectangle drawn on a canvas, and this class
+ * includes mouse event handlers for interactivity, such as dragging and repositioning.
+ * <p>
+ * Each actor can also maintain a list of associations it has with various use cases in the diagram.
+ */
 public class Actor implements DiagramComponent {
     /**
      * The name of the actor, typically used to identify it in the diagram.
@@ -56,7 +68,6 @@ public class Actor implements DiagramComponent {
      */
     private List<Association> associations;
 
-    private Color outlineColor = Color.BLACK; // Default color
 
     /**
      * Constructor to initialize an Actor object with a specified name.
@@ -75,13 +86,6 @@ public class Actor implements DiagramComponent {
         enableMouseEvents();
     }
 
-    public void setOutlineColor(Color color) {
-        this.outlineColor = color;
-    }
-
-    public Color getOutlineColor() {
-        return outlineColor;
-    }
 
     /**
      * Enables mouse events for the actor's rectangle, allowing it to be dragged and repositioned.
@@ -277,16 +281,33 @@ public class Actor implements DiagramComponent {
                 '}';
     }
 
-    // Method to get the actor's rectangle (for rendering)
+    /**
+     * Retrieves the rectangle representing the actor's visual representation on the canvas.
+     * This rectangle can be used for rendering purposes.
+     *
+     * @return The {@link Rectangle} representing the actor's visual bounds.
+     */
     public Rectangle getActorRectangle() {
         return actorRectangle;
     }
 
+    /**
+     * Adds an association to the list of associations connected to this actor.
+     *
+     * @param association The {@link Association} to be added. It represents a relationship
+     *                     between this actor and a use case in the diagram.
+     * @throws IllegalArgumentException If the provided association is null.
+     */
     public void addAssociation(Association association) {
         associations.add(association);
     }
 
-    // Getter for associations
+    /**
+     * Retrieves the list of associations connected to this actor.
+     * Each association represents a relationship between this actor and one or more use cases.
+     *
+     * @return A {@link List} of {@link Association} objects linked to this actor.
+     */
     public List<Association> getAssociations() {
         return associations;
     }

@@ -74,7 +74,8 @@ public class ClassDiagram implements DiagramComponent {
     private List<Relationship> relationships = new ArrayList<>();
 
     /**
-     * A property holding the name of the class diagram.
+     * A property holding the name of the interface. This property can be observed for changes
+     * and updated dynamically. Use {@link #nameProperty()} to access this property.
      */
     private final StringProperty name = new SimpleStringProperty();
 
@@ -126,9 +127,10 @@ public class ClassDiagram implements DiagramComponent {
     }
 
     /**
-     * Returns the name property of the class diagram.
+     * Returns the name property of the interface.
+     * This method allows for property bindings and listeners.
      *
-     * @return The StringProperty representing the name of the class diagram.
+     * @return The StringProperty representing the name of the interface.
      */
     public StringProperty nameProperty() {
         return name;

@@ -12,6 +12,10 @@ import javafx.stage.Stage;
  * It provides functionality for opening the Use Case Diagram Dashboard or the Class Diagram Dashboard based on user interaction.
  * The class includes two buttons, one for each diagram type, and manages the navigation between different scenes in the application.
  * This controller is used with the FXML file that contains the layout and buttons for diagram selection.
+ * Default constructor for the `ChooseDiagramController` class.
+ * This constructor is automatically invoked when the controller is initialized by the JavaFX framework.
+ * It does not perform any custom initialization, as the controller's setup is handled
+ * in the {@link #initialize()} method after the FXML file is loaded.
  */
 
 public class ChooseDiagramController {
@@ -35,6 +39,14 @@ public class ChooseDiagramController {
      */
     private Stage stage;
 
+    /**
+     * Sets the stage associated with this component or application.
+     * The stage represents the primary window or container for the user interface.
+     *
+     * @param stage The {@link Stage} to associate with this component.
+     *              This stage typically acts as the main window for the application.
+     * @throws IllegalArgumentException If the provided stage is null.
+     */
     public void setStage(Stage stage) {
         this.stage = stage;
     }

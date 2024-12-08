@@ -220,7 +220,7 @@ public class Association {
     /**
      * Returns a string representation of the association between the actor and use case.
      * This method provides a formatted string describing the association in the form:
-     * "Association: actorName <-> useCaseName".
+     * "Association: actorName &lt;-&gt; useCaseName".
      *
      * @return A string representing the association between the actor and use case.
      */

@@ -15,6 +15,14 @@ import java.io.IOException;
  */
 public class HelloApplication extends Application {
     /**
+     * Default constructor for the HelloApplication class.
+     * Initializes the application without any specific setup.
+     */
+    public HelloApplication() {
+        super();
+    }
+
+    /**
      * Initializes and displays the primary application window.
      * This method loads the FXML layout file, initializes the controller, and sets up the scene for the primary stage.
      *

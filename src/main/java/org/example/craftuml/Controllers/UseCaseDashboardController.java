@@ -68,6 +68,15 @@ import java.util.Optional;
 public class UseCaseDashboardController {
 
     /**
+     * Default constructor for the `UseCaseDashboardController` class.
+     * This constructor initializes the controller for the use case dashboard in the Craft UML application.
+     * It is required by JavaFX for loading the controller associated with the FXML file.
+     */
+    public UseCaseDashboardController() {
+        // Default constructor
+    }
+
+    /**
      * The canvas on which the use case diagram is drawn. This is where all elements
      * of the diagram, such as actors, use cases, and associations, are rendered.
      */
@@ -1646,7 +1655,8 @@ public class UseCaseDashboardController {
      * with actors, use cases, associations, and relationships. If the file is successfully loaded,
      * the diagram, actors, use cases, and relationships are populated, and the canvas is redrawn.
      *
-     * @FXML
+     * This method is called when the button is clicked.
+     * It is connected to the FXML file.
      */
     @FXML
     public void handleOpenProject() {
@@ -1797,7 +1807,6 @@ public class UseCaseDashboardController {
      * Saves the current use case diagram and its elements (actors, use cases, associations, relationships)
      * to an XML file selected by the user.
      *
-     * @FXML
      */
     @FXML
     public void handleSaveProject() {

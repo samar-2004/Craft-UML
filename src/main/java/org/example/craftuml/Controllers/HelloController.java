@@ -17,6 +17,9 @@ import javafx.util.Duration;
  * The controller also manages a fade animation on a label, providing visual feedback to
  * the user, and sets up event listeners for key presses to trigger the transition to
  * the dashboard view.
+ * Default constructor for the `HelloController` class.
+ * This constructor initializes the controller for the main screen of the Craft UML application.
+ * It is required by JavaFX for loading the controller associated with the FXML file.
  */
 public class HelloController {
     /**
