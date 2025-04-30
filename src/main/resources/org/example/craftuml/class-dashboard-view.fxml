@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<BorderPane stylesheets="@dashboard.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.craftuml.Controllers.ClassDashboardController">
+       <top>
+              <HBox styleClass="top-buttons-container" alignment="CENTER" spacing="10">
+                     <Button text="New Project" onAction="#handleNewProject" styleClass="top-button">
+                     <graphic>
+                            <ImageView  fitHeight="16" fitWidth="16">
+                                   <Image url="@imgs/add.png"/>
+                            </ImageView>
+                     </graphic>
+                     </Button>
+                     <Button text="Open Project" onAction="#handleOpenProject" styleClass="top-button">
+                     <graphic>
+                            <ImageView  fitHeight="16" fitWidth="16">
+                                   <Image url="@imgs/open.png"/>
+                            </ImageView>
+                     </graphic>
+                     </Button>
+                     <Button text="Save Project" onAction="#handleSaveProject" styleClass="top-button">
+                            <graphic>
+                                   <ImageView fitHeight="16" fitWidth="16">
+                                          <Image url="@imgs/save.png"/>
+                                   </ImageView>
+                            </graphic>
+                     </Button>
+                     <Button text="Generate Code" onAction="#handleGenerateCode" styleClass="top-button">
+                     <graphic>
+                            <ImageView  fitHeight="16" fitWidth="16">
+                                   <Image url="@imgs/generate.png"/>
+                            </ImageView>
+                     </graphic>
+                     </Button>
+                     <Button text="Export Diagram" onAction="#handleExportDiagram" styleClass="top-button">
+                     <graphic>
+                            <ImageView  fitHeight="16" fitWidth="16">
+                                   <Image url="@imgs/export.png"/>
+                            </ImageView>
+                     </graphic>
+                     </Button>
+
+                     <Button text="Exit" onAction="#handleExit" styleClass="top-button">
+                     <graphic>
+                            <ImageView fitHeight="16" fitWidth="16">
+                                   <Image url="@imgs/exit.png"/>
+                            </ImageView>
+                     </graphic>
+                     </Button>
+                     <Button text="About" onAction="#handleAbout" styleClass="top-button">
+                            <graphic>
+                                   <ImageView  fitHeight="16" fitWidth="16">
+                                          <Image url="@imgs/about1.png"/>
+                                   </ImageView>
+                            </graphic>
+                     </Button>
+              </HBox>
+       </top>
+
+       <left >
+              <VBox spacing="15" alignment="TOP_CENTER" style="-fx-padding: 20; -fx-background-color: #D3D3D3;">
+                     <Label text="CLASS DIAGRAM" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: black;" />
+                     <Button onAction="#handleClassDiagram" prefHeight="40" prefWidth="150" text="Add Class" styleClass="left-button"/>
+                     <Button onAction="#handleAddInterface" prefHeight="40" prefWidth="150" text="Add Interface" styleClass="left-button"/>
+                     <Button onAction="#handleAddAssociation" prefHeight="40" prefWidth="150" text="Add Association" styleClass="left-button"/>
+                     <Button onAction="#handleAddComposition" prefHeight="40" prefWidth="150" text="Add Composition" styleClass="left-button"/>
+                     <Button onAction="#handleAddAggregation" prefHeight="40" prefWidth="150" text="Add Aggregation" styleClass="left-button"/>
+                     <Button onAction="#handleAddGeneralization" prefHeight="40" prefWidth="150" text="Add Generalization" styleClass="left-button"/>
+                     <Button onAction="#handleAddRealization" prefHeight="40" prefWidth="150" text="Add Realization" styleClass="left-button"/>
+              </VBox>
+       </left>
+
+
+
+       <center>
+              <ScrollPane fx:id="scrollPane" fitToWidth="true" fitToHeight="true" style="-fx-background-color: transparent;">
+                     <Canvas fx:id="drawingCanvas" width="1000" height="1000" />
+              </ScrollPane>
+       </center>
+
+       <right>
+              <VBox spacing="15" style="-fx-padding: 20; -fx-background-color:#D3D3D3; " alignment="TOP_CENTER">
+                     <Label text="CLASS INFORMATION" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: black;" />
+                     <ListView fx:id="modelInfoList" styleClass="list-view" />
+              </VBox>
+       </right>
+
+</BorderPane>

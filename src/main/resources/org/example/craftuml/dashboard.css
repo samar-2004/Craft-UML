@@ -1,0 +1,64 @@
+
+.root {
+    -fx-background-color: #f2f2f2;
+}
+
+.top-buttons-container {
+    -fx-background-color: #D3D3D3;
+    -fx-padding: 10px;
+}
+
+.top-button {
+    -fx-font-size: 12px;
+    -fx-text-fill: white;
+    -fx-padding: 8px 16px;
+    -fx-background-color: #302d45;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-weight: bold;
+}
+
+.top-button:hover {
+    -fx-background-color:#785aa6 ;
+    -fx-text-fill: white;
+}
+
+.top-button:pressed {
+    -fx-background-color: #5A4C7A;
+}
+
+.left-button {
+    -fx-font-size: 14px;
+    -fx-padding: 10px 10px;
+   -fx-background-color: linear-gradient(to bottom, #503774, #645087, #785aa6);
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-font-weight: bold;
+}
+
+.left-button:hover {
+    -fx-background-color: #3a2c4f;
+}
+
+#drawingCanvas{
+       -fx-background-color: black;
+          -fx-border-color: #3b1e54;
+          -fx-border-width: 2px;
+          -fx-border-radius: 5px;
+}
+
+.model-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.list-view {
+    -fx-font-size: 12px;
+    -fx-background-color: #e2e2e2;
+    -fx-background-radius: 5;
+    -fx-border-color: #3b1e54;
+    -fx-border-width: 2px;
+    -fx-padding: 5;
+    -fx-text-fill: #3b1e54;
+}
