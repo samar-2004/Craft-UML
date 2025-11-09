@@ -215,8 +215,8 @@ git push origin feature-name
 ## 🧑‍💻 Author
 
 👤 **Muhammad Samar Junaid**  
-💼 Software Engineer | Java Developer  
-📧 samarjunaid.dev@gmail.com  
+💼 Software Engineer 
+📧 samarjunaid2004@gmail.com  
 🌐 [GitHub Profile](https://github.com/samar-2004)  
 🔗 [LinkedIn Profile](https://www.linkedin.com/in/muhammad-samar-junaid-b955121bb/)
 
